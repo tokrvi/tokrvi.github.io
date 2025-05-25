@@ -290,7 +290,7 @@
             
             const today = new Date();
             const dateStr = today.toISOString().split('T')[0];
-            const filename = `${tokenNumber}_$(playerName)_quiz_${dateStr}.csv`;
+            const filename = `${tokenNumber}_$('playerName')_quiz_${dateStr}.csv`;
             
             const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
             const url = URL.createObjectURL(blob);
