@@ -53,7 +53,7 @@
             color: white;
             border: none;
             border-radius: 5px;
-            font-size: 18px;
+            font-size: 20px;
             cursor: pointer;
             margin-top: 10px;
         }
@@ -100,6 +100,15 @@
                 font-size: 16px;
             }
         }
+    #score-display {
+    color: #2ecc71; /* Grön färg för poängen */
+    font-weight: bold;
+}
+
+#max-score {
+    color: #3498db; /* Blå färg för maxpoäng */
+    font-weight: bold;
+}
     </style>
 </head>
 <body>
@@ -117,7 +126,7 @@
     </div>
 
     <div id="results" style="display: none;">
-        <h2>Resultat</h2>
+        <h2>Resultat: <span id="score-display">0</span>/<span id="max-score">0</span> rätt</h2>
         <div id="result-name"></div>
         <table id="result-table">
             <tr>
@@ -133,15 +142,205 @@
     <script>
         // Quizdata - lägg till dina 18 frågor här
         const questions = [
-            {
-                question: "Vilken artist släppte låten 'Bohemian Rhapsody'?",
-                options: ["The Beatles", "Pink Floyd", "Queen"],
+            {//fråga 1
+                question: "",
+                options: ["", "", ""],
+                correct: 0
+            },
+            {//fråga 2
+                question: "",
+                options: ["", "", ""],
+                correct: 1
+            },
+			{//fråga 3
+                question: "",
+                options: ["", "", ""],
+                correct: 1
+            },
+			{//fråga 4
+                question: "",
+                options: ["", "", ""],
                 correct: 2
             },
-            {
-                question: "Vilket år släpptes ABBAs 'Dancing Queen'?",
-                options: ["1976", "1980", "1974"],
+			{//fråga 5
+                question: "",
+                options: ["", "", ""],
+                correct: 0
+            },
+			{//fråga 6
+                question: "",
+                options: ["", "", ""],
+                correct: 0
+            },
+			{//fråga 7
+                question: "",
+                options: ["", "", ""],
+                correct: 1
+            },
+			{//fråga 8
+                question: "",
+                options: ["", "", ""],
+                correct: 1
+            },
+			{//fråga 9
+                question: "",
+                options: ["", "", ""],
+                correct: 1
+            },
+			{//fråga 10
+                question: "",
+                options: ["", "", ""],
+                correct: 1
+            },
+			{//fråga 11
+                question: "",
+                options: ["", "", ""],
+                correct: 1
+            },
+			{//fråga 12
+                question: "",
+                options: ["", "", ""],
+                correct: 0
+            },
+			{//fråga 13
+                question: "",
+                options: ["", "", ""],
+                correct: 1
+            },
+			{//fråga 14
+                question: "",
+                options: ["", "", ""],
+                correct: 0
+            },
+			{//fråga 15
+                question: "",
+                options: ["", "", ""],
+                correct: 1
+            },
+			{//fråga 16
+                question: "",
+                options: ["", "", ""],
+                correct: 1
+            },
+			{//fråga 17
+                question: "",
+                options: ["", "", ""],
+                correct: 1
+            },
+			{//fråga 18
+                question: "",
+                options: ["", "", ""],
+                correct: 0
+            },
+			{//fråga 19
+                question: "",
+                options: ["", "", ""],
+                correct: 1
+            },
+			{//fråga 20
+                question: "",
+                options: ["", "", ""],
+                correct: 1
+            },
+			{//fråga 21
+                question: "",
+                options: ["", "", ""],
+                correct: 1
+            },
+			{//fråga 22
+                question: "",
+                options: ["", "", ""],
+                correct: 1
+            },
+			{//fråga 23
+                question: "",
+                options: ["", "", ""],
                 correct: 2
+            },
+			{//fråga 24
+                question: "",
+                options: ["", "", ""],
+                correct: 1
+            },
+			{//fråga 25
+                question: "",
+                options: ["", "", ""],
+                correct: 0
+            },
+			{//fråga 26
+                question: "",
+                options: ["", "", ""],
+                correct: 1
+            },
+			{//fråga 27
+                question: "",
+                options: ["", "", ""],
+                correct: 1
+            },
+			{//fråga 28
+                question: "",
+                options: ["", "", ""],
+                correct: 1
+            },
+			{//fråga 29
+                question: "",
+                options: ["", "", ""],
+                correct: 1
+            },
+			{//fråga 30
+                question: "",
+                options: ["", "", ""],
+                correct: 1
+            },
+			{//fråga 31
+                question: "",
+                options: ["", "", ""],
+                correct: 2
+            },
+			{//fråga 32
+                question: "",
+                options: ["", "", ""],
+                correct: 0
+            },
+			{//fråga 33
+                question: "",
+                options: ["", "", ""],
+                correct: 1
+            },
+			{//fråga 34
+                question: "",
+                options: ["", "", ""],
+                correct: 1
+            },
+			{//fråga 35
+                question: "",
+                options: ["", "", ""],
+                correct: 2
+            },
+			{//fråga 36
+                question: "",
+                options: ["", "", ""],
+                correct: 0
+            },
+			{//fråga 37
+                question: "",
+                options: ["", "", ""],
+                correct: 1
+            },
+			{//fråga 38
+                question: "",
+                options: ["", "", ""],
+                correct: 0
+            },
+			{//fråga 39
+                question: "",
+                options: ["", "", ""],
+                correct: 0
+            },
+			{//fråga 40
+                question: "",
+                options: ["", "", ""],
+                correct: 0
             },
             // Lägg till resterande frågor här...
         ];
@@ -261,21 +460,46 @@
             document.getElementById("results").style.display = "block";
             document.getElementById("result-name").textContent = "Spelare: " + playerName;
             
-            const table = document.getElementById("result-table");
-            
-            questions.forEach((q, index) => {
-                const row = table.insertRow();
-                row.insertCell().textContent = index + 1;
-                
-                const userAnswer = answers[index] !== undefined ? 
-                    `${String.fromCharCode(65 + answers[index])}) ${q.options[answers[index]]}` : 
-                    "Inget svar";
-                row.insertCell().textContent = userAnswer;
-                
-                row.insertCell().textContent = `${String.fromCharCode(65 + q.correct)}) ${q.options[q.correct]}`;
-            });
+            // Räkna antal rätt svar
+    let correctCount = 0;
+    questions.forEach((q, index) => {
+        if(answers[index] === q.correct) {
+            correctCount++;
         }
-
+    });
+            
+            
+            
+         document.getElementById("score-display").textContent = correctCount;
+    document.getElementById("max-score").textContent = questions.length;
+            
+            
+       //--     
+   const table = document.getElementById("result-table");
+    while(table.rows.length > 1) {
+        table.deleteRow(1);
+    }
+    
+    // Fyll i resultat
+    questions.forEach((q, index) => {
+        const row = table.insertRow();
+        row.insertCell().textContent = index + 1;
+        
+        const userAnswer = answers[index] !== undefined ? 
+            `${String.fromCharCode(65 + answers[index])}) ${q.options[answers[index]]}` : 
+            "Inget svar";
+        row.insertCell().textContent = userAnswer;
+        
+        row.insertCell().textContent = `${String.fromCharCode(65 + q.correct)}) ${q.options[q.correct]}`;
+        
+        // Markera rätt/fel svar med färg
+        if(answers[index] === q.correct) {
+            row.style.backgroundColor = "#e6ffe6"; // Ljusgrön för rätt
+        } else if(answers[index] !== undefined) {
+            row.style.backgroundColor = "#ffe6e6"; // Ljusröd för fel
+        }
+    });
+}
         function exportToCSV() {
             let csvContent = "Fråga,Ditt svar,Rätt svar\n";
             
@@ -290,7 +514,7 @@
             
             const today = new Date();
             const dateStr = today.toISOString().split('T')[0];
-            const filename = `${tokenNumber}_${playerName}_quiz_${dateStr}.csv`;
+            const filename = `${tokenNumber}_$(playerName)_quiz_${dateStr}.csv`;
             
             const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
             const url = URL.createObjectURL(blob);
