@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Restaurangräknare</title>
     <style>
-        /* [All CSS-koden från tidigare förblir oförändrad] */
+        /* [All CSS-koden förblir oförändrad] */
         * {
             margin: 0;
             padding: 0;
@@ -214,26 +214,6 @@
             transform: scale(0.98);
         }
         
-        .copy-instructions {
-            background: white;
-            border-radius: 12px;
-            padding: 15px;
-            margin-top: 15px;
-            font-size: 14px;
-            color: #8E8E93;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            display: none;
-        }
-        
-        .copy-instructions ol {
-            margin-left: 20px;
-            margin-top: 10px;
-        }
-        
-        .copy-instructions li {
-            margin-bottom: 8px;
-        }
-        
         @media (max-width: 380px) {
             .buttons-grid {
                 grid-template-columns: repeat(2, 1fr);
@@ -275,16 +255,6 @@
         
         <button class="action-btn export-btn" id="exportBtn">Exportera till CSV</button>
         <button class="action-btn reset-btn" id="resetBtn">Nollställ kväll</button>
-        
-        <div class="copy-instructions" id="copyInstructions">
-            <strong>Hur du sparar CSV-filen:</strong>
-            <ol>
-                <li>Tryck på "Dela"-knappen (fyrkant med pil)</li>
-                <li>Välj "Spara till Filer"</li>
-                <li>Välj mapp (t.ex. iCloud Drive)</li>
-                <li>Tryck på "Spara"</li>
-            </ol>
-        </div>
     </div>
     
     <div class="modal" id="confirmModal">
@@ -312,7 +282,6 @@
         const modalQuestion = document.getElementById('modalQuestion');
         const modalYes = document.getElementById('modalYes');
         const modalNo = document.getElementById('modalNo');
-        const copyInstructions = document.getElementById('copyInstructions');
         
         // Update display
         function updateDisplay() {
@@ -377,8 +346,8 @@
             updateDisplay();
         }
         
-        // Export to CSV using iOS Share Sheet
-        function exportToCSV() {
+        // Create and share CSV file
+        async function shareCSV() {
             if (items.length === 0) {
                 alert('Inga artiklar att exportera!');
                 return;
@@ -395,71 +364,46 @@
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const fileName = `restaurang_${formatDate(new Date())}.csv`;
             
-            // Check if we can use the Web Share API (works on iOS)
-            if (navigator.share && navigator.canShare) {
+            // Create a File from the Blob
+            const file = new File([blob], fileName, { type: 'text/csv' });
+            
+            // Share the file using Web Share API
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
                 try {
-                    const file = new File([blob], fileName, { type: 'text/csv' });
-                    
-                    if (navigator.canShare({ files: [file] })) {
-                        navigator.share({
-                            files: [file],
-                            title: 'Restaurangkväll CSV',
-                            text: 'Exporterad data från restaurangräknaren'
-                        }).then(() => {
-                            console.log('CSV delad!');
-                        }).catch(error => {
-                            console.log('Delningsfel:', error);
-                            fallbackExport(blob, fileName, csvContent);
-                        });
-                    } else {
-                        fallbackExport(blob, fileName, csvContent);
-                    }
+                    await navigator.share({
+                        files: [file],
+                        title: 'Restaurangräknare CSV',
+                        text: 'Exporterad data från restaurangbesök'
+                    });
                 } catch (error) {
-                    fallbackExport(blob, fileName, csvContent);
+                    console.log('Delningsfel:', error);
+                    downloadCSV(csvContent, fileName);
                 }
             } else {
-                fallbackExport(blob, fileName, csvContent);
+                downloadCSV(csvContent, fileName);
             }
         }
         
-        // Fallback export method for browsers without Web Share API
-        function fallbackExport(blob, fileName, csvContent) {
-            // Show instructions
-            copyInstructions.style.display = 'block';
-            
-            // Create download link
-            const url = URL.createObjectURL(blob);
+        // Fallback download method
+        function downloadCSV(csvContent, fileName) {
+            // Create a hidden link element
             const link = document.createElement('a');
-            link.href = url;
+            link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
             link.download = fileName;
+            link.style.display = 'none';
             
-            // Trigger download
+            // Add to document, click it, and remove it
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             
-            // Also show the data as text for copying
-            setTimeout(() => {
-                alert(`CSV-filen "${fileName}" har laddats ned.\n\nOm du inte ser filen:\n1. Öppna "Filer"-appen\n2. Gå till "På min iPhone"\n3. Leta i "Nedladdningar"-mappen\n\nDu kan också dela filen via knappen nedan:`);
-                
-                // Create a textarea with the CSV content as backup
-                const textArea = document.createElement('textarea');
-                textArea.value = csvContent;
-                textArea.style.position = 'fixed';
-                textArea.style.opacity = '0';
-                document.body.appendChild(textArea);
-                textArea.select();
-                
-                // Try to copy to clipboard
-                try {
-                    document.execCommand('copy');
-                    console.log('CSV kopierat till urklipp');
-                } catch (err) {
-                    console.log('Kunde inte kopiera till urklipp');
-                }
-                
-                document.body.removeChild(textArea);
-            }, 500);
+            // Show instructions
+            alert(`CSV-filen "${fileName}" har sparats.\n\nÖppna "Filer"-appen och leta i "På min iPhone" > "Nedladdningar" för att hitta den.`);
+        }
+        
+        // Export to CSV
+        async function exportToCSV() {
+            await shareCSV();
         }
         
         // Reset items
@@ -468,7 +412,6 @@
                 items = [];
                 localStorage.removeItem('restaurantItems');
                 updateDisplay();
-                copyInstructions.style.display = 'none';
             }
         }
         
@@ -501,15 +444,6 @@
         
         // Initial display update
         updateDisplay();
-        
-        // PWA features - make it installable
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js').catch(error => {
-                    console.log('Service Worker registration failed:', error);
-                });
-            });
-        }
     </script>
 </body>
 </html>
