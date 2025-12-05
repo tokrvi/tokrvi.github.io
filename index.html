@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Restaurangräknare</title>
     <style>
+        /* [All CSS-koden från tidigare förblir oförändrad] */
         * {
             margin: 0;
             padding: 0;
@@ -213,6 +214,26 @@
             transform: scale(0.98);
         }
         
+        .copy-instructions {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 15px;
+            font-size: 14px;
+            color: #8E8E93;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            display: none;
+        }
+        
+        .copy-instructions ol {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+        
+        .copy-instructions li {
+            margin-bottom: 8px;
+        }
+        
         @media (max-width: 380px) {
             .buttons-grid {
                 grid-template-columns: repeat(2, 1fr);
@@ -254,6 +275,16 @@
         
         <button class="action-btn export-btn" id="exportBtn">Exportera till CSV</button>
         <button class="action-btn reset-btn" id="resetBtn">Nollställ kväll</button>
+        
+        <div class="copy-instructions" id="copyInstructions">
+            <strong>Hur du sparar CSV-filen:</strong>
+            <ol>
+                <li>Tryck på "Dela"-knappen (fyrkant med pil)</li>
+                <li>Välj "Spara till Filer"</li>
+                <li>Välj mapp (t.ex. iCloud Drive)</li>
+                <li>Tryck på "Spara"</li>
+            </ol>
+        </div>
     </div>
     
     <div class="modal" id="confirmModal">
@@ -281,6 +312,7 @@
         const modalQuestion = document.getElementById('modalQuestion');
         const modalYes = document.getElementById('modalYes');
         const modalNo = document.getElementById('modalNo');
+        const copyInstructions = document.getElementById('copyInstructions');
         
         // Update display
         function updateDisplay() {
@@ -312,18 +344,32 @@
             pendingItem = null;
         }
         
+        // Format time to HH:mm:ss
+        function formatTime(date) {
+            const hours = date.getHours().toString().padStart(2, '0');
+            const minutes = date.getMinutes().toString().padStart(2, '0');
+            const seconds = date.getSeconds().toString().padStart(2, '0');
+            return `${hours}:${minutes}:${seconds}`;
+        }
+        
+        // Format date to YYYY-MM-DD
+        function formatDate(date) {
+            const year = date.getFullYear();
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const day = date.getDate().toString().padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+        
         // Add item to list
         function addItem(itemName) {
             const now = new Date();
-            const timeString = now.toLocaleDateString('sv-SE') + ' ' + now.toLocaleTimeString('sv-SE', { 
-                hour: '2-digit', 
-                minute: '2-digit', 
-                second: '2-digit'
-            });
+            const dateString = formatDate(now);
+            const timeString = formatTime(now);
+            const fullDateTime = `${dateString} ${timeString}`;
             
             items.push({
                 name: itemName,
-                time: timeString,
+                time: fullDateTime,
                 timestamp: now.toISOString()
             });
             
@@ -331,7 +377,7 @@
             updateDisplay();
         }
         
-        // Export to CSV
+        // Export to CSV using iOS Share Sheet
         function exportToCSV() {
             if (items.length === 0) {
                 alert('Inga artiklar att exportera!');
@@ -345,18 +391,75 @@
                 csvContent += `"${item.name}","${time}","${date}"\n`;
             });
             
-            // Create and trigger download
+            // Create a Blob with the CSV content
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const fileName = `restaurang_${formatDate(new Date())}.csv`;
+            
+            // Check if we can use the Web Share API (works on iOS)
+            if (navigator.share && navigator.canShare) {
+                try {
+                    const file = new File([blob], fileName, { type: 'text/csv' });
+                    
+                    if (navigator.canShare({ files: [file] })) {
+                        navigator.share({
+                            files: [file],
+                            title: 'Restaurangkväll CSV',
+                            text: 'Exporterad data från restaurangräknaren'
+                        }).then(() => {
+                            console.log('CSV delad!');
+                        }).catch(error => {
+                            console.log('Delningsfel:', error);
+                            fallbackExport(blob, fileName, csvContent);
+                        });
+                    } else {
+                        fallbackExport(blob, fileName, csvContent);
+                    }
+                } catch (error) {
+                    fallbackExport(blob, fileName, csvContent);
+                }
+            } else {
+                fallbackExport(blob, fileName, csvContent);
+            }
+        }
+        
+        // Fallback export method for browsers without Web Share API
+        function fallbackExport(blob, fileName, csvContent) {
+            // Show instructions
+            copyInstructions.style.display = 'block';
+            
+            // Create download link
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = `restaurang_${new Date().toISOString().split('T')[0]}.csv`;
+            link.download = fileName;
+            
+            // Trigger download
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            URL.revokeObjectURL(url);
             
-            alert('CSV-fil nedladdad! Du kan nu importera den till Numbers.');
+            // Also show the data as text for copying
+            setTimeout(() => {
+                alert(`CSV-filen "${fileName}" har laddats ned.\n\nOm du inte ser filen:\n1. Öppna "Filer"-appen\n2. Gå till "På min iPhone"\n3. Leta i "Nedladdningar"-mappen\n\nDu kan också dela filen via knappen nedan:`);
+                
+                // Create a textarea with the CSV content as backup
+                const textArea = document.createElement('textarea');
+                textArea.value = csvContent;
+                textArea.style.position = 'fixed';
+                textArea.style.opacity = '0';
+                document.body.appendChild(textArea);
+                textArea.select();
+                
+                // Try to copy to clipboard
+                try {
+                    document.execCommand('copy');
+                    console.log('CSV kopierat till urklipp');
+                } catch (err) {
+                    console.log('Kunde inte kopiera till urklipp');
+                }
+                
+                document.body.removeChild(textArea);
+            }, 500);
         }
         
         // Reset items
@@ -365,6 +468,7 @@
                 items = [];
                 localStorage.removeItem('restaurantItems');
                 updateDisplay();
+                copyInstructions.style.display = 'none';
             }
         }
         
@@ -406,23 +510,6 @@
                 });
             });
         }
-        
-        // Add to home screen prompt
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            
-            // Show install button if needed
-            setTimeout(() => {
-                if (deferredPrompt && confirm('Vill du lägga till denna app på hemskärmen för snabbare åtkomst?')) {
-                    deferredPrompt.prompt();
-                    deferredPrompt.userChoice.then(() => {
-                        deferredPrompt = null;
-                    });
-                }
-            }, 3000);
-        });
     </script>
 </body>
 </html>
