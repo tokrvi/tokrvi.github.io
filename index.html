@@ -2,448 +2,588 @@
 <html lang="sv">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Restaurangräknare</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nokia Snake - Tilt-styrning</title>
     <style>
-        /* [All CSS-koden förblir oförändrad] */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
+            touch-action: none;
         }
         
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #f5f5f7;
-            color: #1d1d1f;
-            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-            max-width: 100%;
-            overflow-x: hidden;
-        }
-        
-        .container {
-            max-width: 400px;
-            margin: 0 auto;
-            padding: 20px;
-            min-height: 100vh;
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #1a2a6c);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            height: 100vh;
+            overflow: hidden;
             display: flex;
             flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+        }
+        
+        .game-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            width: 100%;
         }
         
         h1 {
-            text-align: center;
-            margin-bottom: 20px;
-            color: #007AFF;
-            font-size: 24px;
-            font-weight: 600;
+            font-size: 2.5rem;
+            margin-bottom: 5px;
+            color: #4CAF50;
+            text-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
         }
         
-        .items-list {
-            flex-grow: 1;
-            background: white;
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            overflow-y: auto;
-            max-height: 40vh;
-        }
-        
-        .item-row {
-            padding: 12px 0;
-            border-bottom: 1px solid #f0f0f0;
+        .score-container {
             display: flex;
             justify-content: space-between;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        
+        #game-board {
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            aspect-ratio: 1/1;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
             align-items: center;
+            gap: 15px;
+            width: 100%;
+            margin-top: 10px;
         }
         
-        .item-row:last-child {
-            border-bottom: none;
+        .tilt-indicator {
+            width: 100%;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
         }
         
-        .item-name {
-            font-weight: 500;
+        .tilt-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #4CAF50, #FFC107);
+            transition: width 0.3s;
         }
         
-        .item-time {
-            font-size: 13px;
-            color: #8E8E93;
+        .speed-info {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            font-size: 0.9rem;
+            color: #ddd;
         }
         
-        .total {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
+        .instructions {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 10px;
             text-align: center;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            font-weight: 600;
-            font-size: 20px;
-            color: #007AFF;
+            font-size: 1rem;
+            line-height: 1.5;
+            max-width: 100%;
+            margin-top: 10px;
         }
         
-        .buttons-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin-bottom: 20px;
+        .instructions p {
+            margin: 5px 0;
         }
         
-        .item-btn {
-            background: white;
-            border: none;
-            border-radius: 12px;
-            padding: 18px 10px;
-            font-size: 15px;
-            font-weight: 500;
-            color: #1d1d1f;
-            cursor: pointer;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-            transition: all 0.2s ease;
-            touch-action: manipulation;
-        }
-        
-        .item-btn:active {
-            transform: scale(0.98);
-            background: #f0f0f0;
-        }
-        
-        .drink-btn {
-            border-left: 4px solid #007AFF;
-        }
-        
-        .food-btn {
-            border-left: 4px solid #34C759;
-        }
-        
-        .action-btn {
-            background: #007AFF;
+        button {
+            background: linear-gradient(to bottom, #4CAF50, #2E7D32);
             color: white;
             border: none;
-            border-radius: 12px;
-            padding: 20px;
-            font-size: 18px;
-            font-weight: 600;
+            padding: 12px 25px;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            font-weight: bold;
             cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s;
             margin-top: 10px;
-            transition: all 0.2s ease;
-            touch-action: manipulation;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
         
-        .action-btn:active {
-            transform: scale(0.98);
-            background: #0056CC;
+        button:hover {
+            background: linear-gradient(to bottom, #43A047, #1B5E20);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.4);
         }
         
-        .export-btn {
-            background: #34C759;
+        button:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
         
-        .export-btn:active {
-            background: #2CA24F;
-        }
-        
-        .reset-btn {
-            background: #FF3B30;
-            margin-top: 5px;
-        }
-        
-        .reset-btn:active {
-            background: #D70015;
-        }
-        
-        .modal {
-            display: none;
-            position: fixed;
+        #game-over {
+            position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            z-index: 1000;
-            padding: 20px;
+            z-index: 10;
+            border-radius: 10px;
         }
         
-        .modal-content {
-            background: white;
-            border-radius: 16px;
-            padding: 30px;
-            text-align: center;
-            max-width: 300px;
-            width: 100%;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-        
-        .modal h3 {
+        #game-over h2 {
+            font-size: 2.5rem;
+            color: #FF5252;
             margin-bottom: 20px;
-            font-size: 20px;
-            color: #1d1d1f;
+            text-shadow: 0 0 10px rgba(255, 82, 82, 0.5);
         }
         
-        .modal-buttons {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
+        #final-score {
+            font-size: 1.8rem;
+            margin-bottom: 30px;
+            color: #4CAF50;
         }
         
-        .modal-btn {
-            flex: 1;
-            padding: 15px;
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
+        .nokia-brand {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #aaa;
+            font-size: 0.9rem;
+            font-style: italic;
         }
         
-        .modal-btn-yes {
-            background: #34C759;
-            color: white;
+        .sensor-data {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            color: #FFC107;
         }
         
-        .modal-btn-no {
-            background: #FF3B30;
-            color: white;
-        }
-        
-        .modal-btn:active {
-            transform: scale(0.98);
-        }
-        
-        @media (max-width: 380px) {
-            .buttons-grid {
-                grid-template-columns: repeat(2, 1fr);
+        @media (max-width: 500px) {
+            .game-container {
+                padding: 15px;
             }
             
-            .item-btn {
-                padding: 15px 8px;
-                font-size: 14px;
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .score-container {
+                font-size: 1rem;
+                padding: 8px 15px;
+            }
+            
+            .instructions {
+                font-size: 0.9rem;
+                padding: 10px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🍽️ Restaurangräknare</h1>
-        
-        <div class="items-list" id="itemsList">
-            <!-- Items will appear here -->
-            <div style="text-align: center; color: #8E8E93; padding: 20px;">
-                Inga artiklar tillagda än
+    <div class="game-container">
+        <div class="header">
+            <h1>NOKIA SNAKE</h1>
+            <div class="score-container">
+                <div>Poäng: <span id="score">0</span></div>
+                <div>Hastighet: <span id="speed">Normal</span></div>
             </div>
         </div>
         
-        <div class="total">
-            Totalt: <span id="totalCount">0</span> artiklar
+        <div id="game-board">
+            <div id="game-over">
+                <h2>GAME OVER</h2>
+                <div id="final-score">Poäng: 0</div>
+                <button id="restart-btn">Spela Igen</button>
+            </div>
+            <div class="sensor-data">Lutning: <span id="tilt-value">0°</span></div>
+            <div class="nokia-brand">Inspired by Nokia 3310</div>
         </div>
         
-        <div class="buttons-grid">
-            <button class="item-btn drink-btn" data-item="40 cl öl stor stark">40 cl öl<br>stor stark</button>
-            <button class="item-btn drink-btn" data-item="50 cl öl flaska">50 cl öl<br>flaska</button>
-            <button class="item-btn drink-btn" data-item="50 cl 4,5% cider">50 cl<br>4,5% cider</button>
-            <button class="item-btn drink-btn" data-item="50 cl 7,2% cider">50 cl<br>7,2% cider</button>
-            <button class="item-btn drink-btn" data-item="4 cl starksprit">4 cl<br>starksprit</button>
-            <button class="item-btn drink-btn" data-item="1.5L kanna öl">1.5L<br>kanna öl</button>
-            <button class="item-btn drink-btn" data-item="3L kanna öl">3L<br>kanna öl</button>
-            <button class="item-btn food-btn" data-item="Liten mat">Liten mat</button>
-            <button class="item-btn food-btn" data-item="Stor mat">Stor mat</button>
-        </div>
-        
-        <button class="action-btn export-btn" id="exportBtn">Exportera till CSV</button>
-        <button class="action-btn reset-btn" id="resetBtn">Nollställ kväll</button>
-    </div>
-    
-    <div class="modal" id="confirmModal">
-        <div class="modal-content">
-            <h3 id="modalQuestion">Vill du registrera artikeln?</h3>
-            <div class="modal-buttons">
-                <button class="modal-btn modal-btn-yes" id="modalYes">Ja</button>
-                <button class="modal-btn modal-btn-no" id="modalNo">Nej</button>
+        <div class="controls">
+            <div class="tilt-indicator">
+                <div class="tilt-fill" id="tilt-fill"></div>
+            </div>
+            <div class="speed-info">
+                <span>Långsamt (platt)</span>
+                <span>Snabb (luta)</span>
             </div>
         </div>
+        
+        <div class="instructions">
+            <p><strong>Instruktioner:</strong></p>
+            <p>Luta telefonen för att styra ormen</p>
+            <p>Håll telefonen plant för att sakta ner</p>
+            <p>Fånga den gröna maten för poäng!</p>
+        </div>
+        
+        <button id="start-btn">Starta Spelet</button>
     </div>
-    
+
     <script>
-        // Initialize items array
-        let items = JSON.parse(localStorage.getItem('restaurantItems')) || [];
-        let pendingItem = null;
-        
-        // DOM Elements
-        const itemsList = document.getElementById('itemsList');
-        const totalCount = document.getElementById('totalCount');
-        const itemButtons = document.querySelectorAll('.item-btn');
-        const exportBtn = document.getElementById('exportBtn');
-        const resetBtn = document.getElementById('resetBtn');
-        const confirmModal = document.getElementById('confirmModal');
-        const modalQuestion = document.getElementById('modalQuestion');
-        const modalYes = document.getElementById('modalYes');
-        const modalNo = document.getElementById('modalNo');
-        
-        // Update display
-        function updateDisplay() {
-            if (items.length === 0) {
-                itemsList.innerHTML = '<div style="text-align: center; color: #8E8E93; padding: 20px;">Inga artiklar tillagda än</div>';
-            } else {
-                itemsList.innerHTML = items.map(item => `
-                    <div class="item-row">
-                        <div>
-                            <div class="item-name">${item.name}</div>
-                            <div class="item-time">${item.time}</div>
-                        </div>
-                    </div>
-                `).join('');
-            }
-            totalCount.textContent = items.length;
-        }
-        
-        // Show confirmation modal
-        function showConfirmation(itemName) {
-            pendingItem = itemName;
-            modalQuestion.textContent = `Vill du registrera "${itemName}"?`;
-            confirmModal.style.display = 'flex';
-        }
-        
-        // Hide confirmation modal
-        function hideConfirmation() {
-            confirmModal.style.display = 'none';
-            pendingItem = null;
-        }
-        
-        // Format time to HH:mm:ss
-        function formatTime(date) {
-            const hours = date.getHours().toString().padStart(2, '0');
-            const minutes = date.getMinutes().toString().padStart(2, '0');
-            const seconds = date.getSeconds().toString().padStart(2, '0');
-            return `${hours}:${minutes}:${seconds}`;
-        }
-        
-        // Format date to YYYY-MM-DD
-        function formatDate(date) {
-            const year = date.getFullYear();
-            const month = (date.getMonth() + 1).toString().padStart(2, '0');
-            const day = date.getDate().toString().padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        }
-        
-        // Add item to list
-        function addItem(itemName) {
-            const now = new Date();
-            const dateString = formatDate(now);
-            const timeString = formatTime(now);
-            const fullDateTime = `${dateString} ${timeString}`;
+        document.addEventListener('DOMContentLoaded', () => {
+            // Elementreferenser
+            const gameBoard = document.getElementById('game-board');
+            const scoreElement = document.getElementById('score');
+            const speedElement = document.getElementById('speed');
+            const tiltValueElement = document.getElementById('tilt-value');
+            const tiltFillElement = document.getElementById('tilt-fill');
+            const startBtn = document.getElementById('start-btn');
+            const gameOverScreen = document.getElementById('game-over');
+            const finalScoreElement = document.getElementById('final-score');
+            const restartBtn = document.getElementById('restart-btn');
             
-            items.push({
-                name: itemName,
-                time: fullDateTime,
-                timestamp: now.toISOString()
-            });
+            // Spelvariabler
+            const ctx = gameBoard.getContext('2d');
+            const gridSize = 20;
+            const boardSize = Math.min(gameBoard.clientWidth, gameBoard.clientHeight);
+            gameBoard.width = boardSize;
+            gameBoard.height = boardSize;
+            const gridCount = boardSize / gridSize;
             
-            localStorage.setItem('restaurantItems', JSON.stringify(items));
-            updateDisplay();
-        }
-        
-        // Create and share CSV file
-        async function shareCSV() {
-            if (items.length === 0) {
-                alert('Inga artiklar att exportera!');
-                return;
+            let snake = [];
+            let food = {};
+            let direction = 'right';
+            let nextDirection = 'right';
+            let score = 0;
+            let gameSpeed = 120; // ms (snabbare = högre siffra)
+            let gameInterval;
+            let gameRunning = false;
+            let lastTilt = { beta: 0, gamma: 0 };
+            
+            // Initiera spelet
+            function initGame() {
+                // Startposition för ormen
+                snake = [
+                    {x: 5, y: 10},
+                    {x: 4, y: 10},
+                    {x: 3, y: 10}
+                ];
+                
+                generateFood();
+                score = 0;
+                scoreElement.textContent = score;
+                direction = 'right';
+                nextDirection = 'right';
+                speedElement.textContent = "Normal";
+                gameRunning = true;
+                
+                if (gameInterval) clearInterval(gameInterval);
+                gameInterval = setInterval(gameLoop, gameSpeed);
+                
+                // Dölj game over-skärmen
+                gameOverScreen.style.display = 'none';
             }
             
-            // Create CSV content
-            let csvContent = "Artikel,Tid,Datum\n";
-            items.forEach(item => {
-                const [date, time] = item.time.split(' ');
-                csvContent += `"${item.name}","${time}","${date}"\n`;
-            });
+            // Generera mat på slumpmässig position
+            function generateFood() {
+                const maxPos = gridCount - 1;
+                let newFood;
+                let onSnake;
+                
+                do {
+                    onSnake = false;
+                    newFood = {
+                        x: Math.floor(Math.random() * maxPos),
+                        y: Math.floor(Math.random() * maxPos)
+                    };
+                    
+                    // Kontrollera att maten inte hamnar på ormen
+                    for (let segment of snake) {
+                        if (segment.x === newFood.x && segment.y === newFood.y) {
+                            onSnake = true;
+                            break;
+                        }
+                    }
+                } while (onSnake);
+                
+                food = newFood;
+            }
             
-            // Create a Blob with the CSV content
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const fileName = `restaurang_${formatDate(new Date())}.csv`;
-            
-            // Create a File from the Blob
-            const file = new File([blob], fileName, { type: 'text/csv' });
-            
-            // Share the file using Web Share API
-            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-                try {
-                    await navigator.share({
-                        files: [file],
-                        title: 'Restaurangräknare CSV',
-                        text: 'Exporterad data från restaurangbesök'
-                    });
-                } catch (error) {
-                    console.log('Delningsfel:', error);
-                    downloadCSV(csvContent, fileName);
+            // Huvudspelloop
+            function gameLoop() {
+                moveSnake();
+                if (checkCollision()) {
+                    gameOver();
+                    return;
                 }
-            } else {
-                downloadCSV(csvContent, fileName);
+                checkFoodCollision();
+                drawGame();
             }
-        }
-        
-        // Fallback download method
-        function downloadCSV(csvContent, fileName) {
-            // Create a hidden link element
-            const link = document.createElement('a');
-            link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
-            link.download = fileName;
-            link.style.display = 'none';
             
-            // Add to document, click it, and remove it
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            // Show instructions
-            alert(`CSV-filen "${fileName}" har sparats.\n\nÖppna "Filer"-appen och leta i "På min iPhone" > "Nedladdningar" för att hitta den.`);
-        }
-        
-        // Export to CSV
-        async function exportToCSV() {
-            await shareCSV();
-        }
-        
-        // Reset items
-        function resetItems() {
-            if (confirm('Är du säker på att du vill nollställa all data för kvällen? Detta kan inte ångras.')) {
-                items = [];
-                localStorage.removeItem('restaurantItems');
-                updateDisplay();
+            // Flytta ormen
+            function moveSnake() {
+                direction = nextDirection;
+                
+                // Skapa nytt huvud baserat på riktning
+                const head = {...snake[0]};
+                
+                switch(direction) {
+                    case 'up': head.y--; break;
+                    case 'down': head.y++; break;
+                    case 'left': head.x--; break;
+                    case 'right': head.x++; break;
+                }
+                
+                // Lägg till nytt huvud
+                snake.unshift(head);
+                
+                // Ta bort svans om ormen inte ätit
+                if (!head.food) {
+                    snake.pop();
+                } else {
+                    // Återställa flagga
+                    snake[0].food = false;
+                    score += 10;
+                    scoreElement.textContent = score;
+                }
             }
-        }
-        
-        // Event Listeners
-        itemButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const itemName = button.getAttribute('data-item');
-                showConfirmation(itemName);
+            
+            // Kolla kollisioner
+            function checkCollision() {
+                const head = snake[0];
+                
+                // Kolla kollision med väggar
+                if (head.x < 0 || head.x >= gridCount || head.y < 0 || head.y >= gridCount) {
+                    return true;
+                }
+                
+                // Kolla kollision med sig själv
+                for (let i = 1; i < snake.length; i++) {
+                    if (head.x === snake[i].x && head.y === snake[i].y) {
+                        return true;
+                    }
+                }
+                
+                return false;
+            }
+            
+            // Kolla om ormen äter mat
+            function checkFoodCollision() {
+                const head = snake[0];
+                
+                if (head.x === food.x && head.y === food.y) {
+                    // Markera att huvudet har ätit mat
+                    head.food = true;
+                    generateFood();
+                }
+            }
+            
+            // Rita spelplanen
+            function drawGame() {
+                // Rensa canvas
+                ctx.clearRect(0, 0, boardSize, boardSize);
+                
+                // Rita rutnät (bakgrund)
+                ctx.fillStyle = '#111';
+                ctx.fillRect(0, 0, boardSize, boardSize);
+                
+                // Rita rutnätlinjer
+                ctx.strokeStyle = '#222';
+                ctx.lineWidth = 0.5;
+                
+                for (let i = 0; i <= gridCount; i++) {
+                    // Vertikala linjer
+                    ctx.beginPath();
+                    ctx.moveTo(i * gridSize, 0);
+                    ctx.lineTo(i * gridSize, boardSize);
+                    ctx.stroke();
+                    
+                    // Horisontella linjer
+                    ctx.beginPath();
+                    ctx.moveTo(0, i * gridSize);
+                    ctx.lineTo(boardSize, i * gridSize);
+                    ctx.stroke();
+                }
+                
+                // Rita mat
+                ctx.fillStyle = '#4CAF50';
+                ctx.beginPath();
+                ctx.arc(
+                    food.x * gridSize + gridSize/2,
+                    food.y * gridSize + gridSize/2,
+                    gridSize/2 - 2,
+                    0,
+                    Math.PI * 2
+                );
+                ctx.fill();
+                
+                // Rita ormen
+                snake.forEach((segment, index) => {
+                    if (index === 0) {
+                        // Rita huvudet
+                        ctx.fillStyle = '#2196F3';
+                        ctx.beginPath();
+                        ctx.arc(
+                            segment.x * gridSize + gridSize/2,
+                            segment.y * gridSize + gridSize/2,
+                            gridSize/2 - 1,
+                            0,
+                            Math.PI * 2
+                        );
+                        ctx.fill();
+                        
+                        // Rita ögon
+                        ctx.fillStyle = 'white';
+                        const eyeSize = gridSize/8;
+                        
+                        // Vänster öga
+                        let eyeX = segment.x * gridSize + gridSize/4;
+                        let eyeY = segment.y * gridSize + gridSize/3;
+                        
+                        // Höger öga
+                        if (direction === 'left' || direction === 'right') {
+                            eyeX = direction === 'left' ? 
+                                segment.x * gridSize + gridSize/4 : 
+                                segment.x * gridSize + gridSize * 3/4;
+                        } else {
+                            eyeY = direction === 'up' ? 
+                                segment.y * gridSize + gridSize/3 : 
+                                segment.y * gridSize + gridSize * 2/3;
+                        }
+                        
+                        ctx.beginPath();
+                        ctx.arc(eyeX, eyeY, eyeSize, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        // Pupill
+                        ctx.fillStyle = '#333';
+                        ctx.beginPath();
+                        ctx.arc(eyeX, eyeY, eyeSize/2, 0, Math.PI * 2);
+                        ctx.fill();
+                    } else {
+                        // Rita kroppen
+                        ctx.fillStyle = `hsl(${200 - index * 2}, 100%, 50%)`;
+                        ctx.fillRect(
+                            segment.x * gridSize + 1,
+                            segment.y * gridSize + 1,
+                            gridSize - 2,
+                            gridSize - 2
+                        );
+                        
+                        // Rita kroppsmönster
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+                        ctx.beginPath();
+                        ctx.arc(
+                            segment.x * gridSize + gridSize/2,
+                            segment.y * gridSize + gridSize/2,
+                            gridSize/4,
+                            0,
+                            Math.PI * 2
+                        );
+                        ctx.fill();
+                    }
+                });
+            }
+            
+            // Hantera lutning för styrning
+            function handleOrientation(event) {
+                if (!gameRunning) return;
+                
+                const beta = event.beta;  // Framåt/bakåt (-180 till 180)
+                const gamma = event.gamma; // Vänster/höger (-90 till 90)
+                
+                // Uppdatera sensorvärden på skärmen
+                const tiltMagnitude = Math.min(100, Math.sqrt(beta * beta + gamma * gamma));
+                tiltValueElement.textContent = `${Math.round(tiltMagnitude)}°`;
+                tiltFillElement.style.width = `${tiltMagnitude}%`;
+                
+                // Hastighetskontroll - sakta ner när telefonen är platt
+                if (tiltMagnitude < 30) {
+                    speedElement.textContent = "Långsam";
+                    clearInterval(gameInterval);
+                    gameInterval = setInterval(gameLoop, 200); // Långsammare
+                } else {
+                    speedElement.textContent = "Normal";
+                    clearInterval(gameInterval);
+                    gameInterval = setInterval(gameLoop, gameSpeed);
+                }
+                
+                // Styrning baserad på lutning
+                if (Math.abs(gamma) > Math.abs(beta)) {
+                    // Horisontell lutning dominerar
+                    if (gamma > 15 && direction !== 'left') {
+                        nextDirection = 'right';
+                    } else if (gamma < -15 && direction !== 'right') {
+                        nextDirection = 'left';
+                    }
+                } else {
+                    // Vertikal lutning dominerar
+                    if (beta > 15 && direction !== 'up') {
+                        nextDirection = 'down';
+                    } else if (beta < -15 && direction !== 'down') {
+                        nextDirection = 'up';
+                    }
+                }
+                
+                lastTilt = { beta, gamma };
+            }
+            
+            // Game Over-funktion
+            function gameOver() {
+                gameRunning = false;
+                clearInterval(gameInterval);
+                
+                // Visa game over-skärmen
+                finalScoreElement.textContent = `Poäng: ${score}`;
+                gameOverScreen.style.display = 'flex';
+            }
+            
+            // Event listeners
+            startBtn.addEventListener('click', () => {
+                initGame();
+                startBtn.textContent = "Starta Om";
             });
-        });
-        
-        modalYes.addEventListener('click', () => {
-            if (pendingItem) {
-                addItem(pendingItem);
-                hideConfirmation();
+            
+            restartBtn.addEventListener('click', () => {
+                initGame();
+            });
+            
+            // Hantera enhetsorientering
+            if (window.DeviceOrientationEvent) {
+                window.addEventListener('deviceorientation', handleOrientation);
+            } else {
+                alert("Din enhet stöder inte nödvändiga sensorer. Spelet kräver en mobil enhet med gyroskop.");
+                startBtn.disabled = true;
             }
+            
+            // Rita första gången
+            drawGame();
         });
-        
-        modalNo.addEventListener('click', hideConfirmation);
-        
-        exportBtn.addEventListener('click', exportToCSV);
-        resetBtn.addEventListener('click', resetItems);
-        
-        // Close modal when clicking outside
-        confirmModal.addEventListener('click', (e) => {
-            if (e.target === confirmModal) {
-                hideConfirmation();
-            }
-        });
-        
-        // Initial display update
-        updateDisplay();
     </script>
 </body>
 </html>
