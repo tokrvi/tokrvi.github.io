@@ -2,838 +2,90 @@
 <html lang="sv">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>iOS Sensor Data Logger</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mina Appar - tokrvi</title>
+    <link rel="stylesheet" href="style.css">
     <style>
-        :root {
-            --primary: #007AFF;
-            --primary-dark: #0056CC;
-            --success: #34C759;
-            --danger: #FF3B30;
-            --warning: #FF9500;
-            --dark: #1C1C1E;
-            --light: #F2F2F7;
-            --gray: #8E8E93;
-            --card-bg: #FFFFFF;
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-        }
-        
+        /* Samma stil som restaurangräknaren */
         body {
-            background-color: var(--light);
-            color: var(--dark);
-            line-height: 1.6;
-            padding: 20px;
+            font-family: 'Segoe UI', system-ui, sans-serif;
             max-width: 800px;
             margin: 0 auto;
-            padding-bottom: 100px;
+            padding: 20px;
+            background: #f5f5f5;
         }
         
-        header {
+        .header {
             text-align: center;
-            margin-bottom: 30px;
-            padding-top: 20px;
-        }
-        
-        h1 {
-            color: var(--dark);
-            margin-bottom: 10px;
-            font-size: 28px;
-        }
-        
-        .subtitle {
-            color: var(--gray);
-            font-size: 16px;
-        }
-        
-        .card {
-            background-color: var(--card-bg);
-            border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
-        }
-        
-        .card-title {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 20px;
-            font-size: 20px;
-            font-weight: 600;
-        }
-        
-        .card-title i {
-            color: var(--primary);
-        }
-        
-        .sensor-status {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            margin-bottom: 30px;
-        }
-        
-        .sensor-item {
-            flex: 1;
-            min-width: 120px;
-            background-color: var(--light);
-            border-radius: 12px;
-            padding: 15px;
-            text-align: center;
-            transition: all 0.3s ease;
-        }
-        
-        .sensor-item.active {
-            background-color: #E8F4FF;
-            border-left: 4px solid var(--primary);
-        }
-        
-        .sensor-icon {
-            font-size: 24px;
-            margin-bottom: 8px;
-            color: var(--gray);
-        }
-        
-        .sensor-item.active .sensor-icon {
-            color: var(--primary);
-        }
-        
-        .sensor-name {
-            font-weight: 600;
-            margin-bottom: 4px;
-        }
-        
-        .sensor-value {
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            color: var(--dark);
-            word-break: break-all;
-        }
-        
-        .controls {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-        
-        .btn {
-            flex: 1;
-            min-width: 140px;
-            padding: 16px 24px;
-            border: none;
-            border-radius: 12px;
-            font-size: 17px;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            transition: all 0.2s ease;
-        }
-        
-        .btn-primary {
-            background-color: var(--primary);
-            color: white;
-        }
-        
-        .btn-primary:hover, .btn-primary:active {
-            background-color: var(--primary-dark);
-        }
-        
-        .btn-success {
-            background-color: var(--success);
-            color: white;
-        }
-        
-        .btn-warning {
-            background-color: var(--warning);
-            color: white;
-        }
-        
-        .btn-danger {
-            background-color: var(--danger);
-            color: white;
-        }
-        
-        .btn:disabled {
-            background-color: var(--gray);
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        
-        .interval-selector {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 30px;
-        }
-        
-        .interval-btn {
-            flex: 1;
-            min-width: 80px;
-            padding: 12px 16px;
-            background-color: var(--light);
-            border: 2px solid transparent;
+            margin-bottom: 40px;
+            padding: 20px;
+            background: white;
             border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .app-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .app-card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
             text-align: center;
-            cursor: pointer;
-            font-weight: 500;
-            transition: all 0.2s ease;
+            text-decoration: none;
+            color: #333;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
         }
         
-        .interval-btn.active {
-            background-color: #E8F4FF;
-            border-color: var(--primary);
-            color: var(--primary);
+        .app-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
         }
         
-        .data-preview {
-            max-height: 300px;
-            overflow-y: auto;
-            margin-bottom: 30px;
-            border-radius: 12px;
-            background-color: var(--dark);
-            color: white;
-            padding: 15px;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
-            line-height: 1.5;
+        .app-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
         }
         
-        .stats {
-            display: flex;
-            justify-content: space-between;
-            flex-wrap: wrap;
-            gap: 15px;
-            margin-bottom: 30px;
+        .app-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-bottom: 10px;
         }
         
-        .stat-box {
-            flex: 1;
-            min-width: 120px;
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            padding: 18px;
-            text-align: center;
-        }
-        
-        .stat-value {
-            font-size: 28px;
-            font-weight: 700;
-            color: var(--primary);
-            margin-bottom: 5px;
-        }
-        
-        .stat-label {
-            font-size: 14px;
-            color: var(--gray);
-        }
-        
-        footer {
-            text-align: center;
-            color: var(--gray);
-            font-size: 14px;
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid #E5E5EA;
-        }
-        
-        .permission-note {
-            background-color: #FFF3E0;
-            border-left: 4px solid var(--warning);
-            padding: 16px;
-            border-radius: 0 12px 12px 0;
-            margin-bottom: 25px;
-            font-size: 15px;
-        }
-        
-        @media (max-width: 600px) {
-            body {
-                padding: 15px;
-                padding-bottom: 80px;
-            }
-            
-            .card {
-                padding: 20px 16px;
-            }
-            
-            .btn {
-                min-width: 100%;
-            }
-            
-            .sensor-item {
-                min-width: calc(50% - 10px);
-            }
+        .app-description {
+            color: #666;
+            font-size: 0.9em;
+            line-height: 1.4;
         }
     </style>
 </head>
 <body>
-    <header>
-        <h1><i class="fas fa-sensor"></i> iOS Sensor Data Logger</h1>
-        <p class="subtitle">Loggar GPS, acceleration, gyroskop, magnetometer och tid till CSV-fil</p>
-    </header>
-    
-    <div class="permission-note">
-        <i class="fas fa-info-circle"></i> <strong>OBS:</strong> När du startar loggningen kommer Safari att be om tillstånd för att komma åt din position (GPS). För sensorer behövs inget extra tillstånd.
+    <div class="header">
+        <h1>📱 Mina Appar</h1>
+        <p>Välkommen till min samling av praktiska verktyg och projekt</p>
     </div>
     
-    <main>
-        <div class="card">
-            <div class="card-title">
-                <i class="fas fa-satellite-dish"></i>
-                <span>Sensorstatus</span>
-            </div>
-            <div class="sensor-status" id="sensorStatus">
-                <!-- Sensor status kommer att fyllas här med JavaScript -->
-            </div>
-            
-            <div class="card-title">
-                <i class="fas fa-sliders-h"></i>
-                <span>Loggningsinställningar</span>
-            </div>
-            <div class="interval-selector">
-                <div class="interval-btn active" data-interval="100">100 ms</div>
-                <div class="interval-btn" data-interval="250">250 ms</div>
-                <div class="interval-btn" data-interval="500">500 ms</div>
-                <div class="interval-btn" data-interval="1000">1 sekund</div>
-                <div class="interval-btn" data-interval="2000">2 sekunder</div>
-            </div>
-            
-            <div class="controls">
-                <button class="btn btn-primary" id="startBtn">
-                    <i class="fas fa-play-circle"></i>
-                    <span>Starta Loggning</span>
-                </button>
-                <button class="btn btn-warning" id="pauseBtn" disabled>
-                    <i class="fas fa-pause-circle"></i>
-                    <span>Pausa</span>
-                </button>
-                <button class="btn btn-danger" id="stopBtn" disabled>
-                    <i class="fas fa-stop-circle"></i>
-                    <span>Stoppa & Exportera</span>
-                </button>
-                <button class="btn btn-success" id="exportBtn" disabled>
-                    <i class="fas fa-file-export"></i>
-                    <span>Exportera CSV</span>
-                </button>
-            </div>
-        </div>
+    <div class="app-grid">
+        <!-- Länk till restaurangräknaren -->
+        <a href="/restaurangraknaren" class="app-card">
+            <div class="app-icon">🍽️</div>
+            <div class="app-title">Restaurangräknaren</div>
+            <div class="app-description">Dela räkningen enkelt mellan vänner</div>
+        </a>
         
-        <div class="card">
-            <div class="card-title">
-                <i class="fas fa-chart-line"></i>
-                <span>Statistik</span>
-            </div>
-            <div class="stats">
-                <div class="stat-box">
-                    <div class="stat-value" id="dataPoints">0</div>
-                    <div class="stat-label">Datapunkter</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-value" id="logTime">0s</div>
-                    <div class="stat-label">Loggtid</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-value" id="fileSize">0 KB</div>
-                    <div class="stat-label">Filstorlek</div>
-                </div>
-            </div>
-        </div>
+        <!-- Ytterligare appar lägger du till här -->
+        <a href="/nasta-app" class="app-card">
+            <div class="app-icon">📊</div>
+            <div class="app-title">Nästa App</div>
+            <div class="app-description">Beskrivning kommer här</div>
+        </a>
         
-        <div class="card">
-            <div class="card-title">
-                <i class="fas fa-eye"></i>
-                <span>Datavy (senaste 5 rader)</span>
-            </div>
-            <div class="data-preview" id="dataPreview">
-                <!-- Data kommer att visas här -->
-            </div>
-        </div>
-    </main>
-    
-    <footer>
-        <p>iOS Sensor Data Logger v1.0 | Kompatibel med iOS 16+ | iPhone 12 mini optimerad</p>
-        <p>Data sparas endast lokalt i webbläsaren</p>
-    </footer>
-
-    <script>
-        // Applikationsstatus
-        const appState = {
-            isLogging: false,
-            isPaused: false,
-            logInterval: 100, // ms
-            dataPoints: [],
-            startTime: null,
-            logTimer: null,
-            geoWatchId: null,
-            sensorsActive: {
-                gps: false,
-                accelerometer: false,
-                gyroscope: false,
-                magnetometer: false
-            }
-        };
-
-        // DOM-element
-        const startBtn = document.getElementById('startBtn');
-        const pauseBtn = document.getElementById('pauseBtn');
-        const stopBtn = document.getElementById('stopBtn');
-        const exportBtn = document.getElementById('exportBtn');
-        const dataPointsEl = document.getElementById('dataPoints');
-        const logTimeEl = document.getElementById('logTime');
-        const fileSizeEl = document.getElementById('fileSize');
-        const dataPreviewEl = document.getElementById('dataPreview');
-        const intervalButtons = document.querySelectorAll('.interval-btn');
-        const sensorStatusEl = document.getElementById('sensorStatus');
-
-        // Initialisera sensorstatus UI
-        function initializeSensorStatus() {
-            const sensors = [
-                { id: 'gps', name: 'GPS', icon: 'fas fa-map-marker-alt' },
-                { id: 'accelerometer', name: 'Accelerometer', icon: 'fas fa-running' },
-                { id: 'gyroscope', name: 'Gyroskop', icon: 'fas fa-sync-alt' },
-                { id: 'magnetometer', name: 'Magnetometer', icon: 'fas fa-compass' }
-            ];
-            
-            sensorStatusEl.innerHTML = '';
-            
-            sensors.forEach(sensor => {
-                const sensorEl = document.createElement('div');
-                sensorEl.className = 'sensor-item';
-                sensorEl.id = `sensor-${sensor.id}`;
-                sensorEl.innerHTML = `
-                    <div class="sensor-icon"><i class="${sensor.icon}"></i></div>
-                    <div class="sensor-name">${sensor.name}</div>
-                    <div class="sensor-value" id="sensor-value-${sensor.id}">Inaktiv</div>
-                `;
-                sensorStatusEl.appendChild(sensorEl);
-            });
-        }
-
-        // Uppdatera sensorstatus
-        function updateSensorStatus(sensorId, isActive, value = null) {
-            const sensorEl = document.getElementById(`sensor-${sensorId}`);
-            const valueEl = document.getElementById(`sensor-value-${sensorId}`);
-            
-            if (isActive) {
-                sensorEl.classList.add('active');
-                if (value) {
-                    valueEl.textContent = value;
-                } else {
-                    valueEl.textContent = 'Aktiv';
-                }
-            } else {
-                sensorEl.classList.remove('active');
-                valueEl.textContent = 'Inaktiv';
-            }
-            
-            appState.sensorsActive[sensorId] = isActive;
-        }
-
-        // Uppdatera förhandsvisning
-        function updatePreview() {
-            if (appState.dataPoints.length === 0) {
-                dataPreviewEl.textContent = 'Ingen data loggad ännu. Starta loggningen för att börja samla data.';
-                return;
-            }
-            
-            // Visa de senaste 5 datapunkterna
-            const recentData = appState.dataPoints.slice(-5);
-            let previewText = '';
-            
-            recentData.forEach(point => {
-                previewText += `${point.timestamp} | `;
-                previewText += `GPS: ${point.latitude?.toFixed(6) || 'N/A'}, ${point.longitude?.toFixed(6) || 'N/A'} | `;
-                previewText += `Acc: ${point.accX?.toFixed(2) || '0'}, ${point.accY?.toFixed(2) || '0'}, ${point.accZ?.toFixed(2) || '0'}\n`;
-            });
-            
-            dataPreviewEl.textContent = previewText;
-            
-            // Rulla till botten
-            dataPreviewEl.scrollTop = dataPreviewEl.scrollHeight;
-        }
-
-        // Uppdatera statistik
-        function updateStats() {
-            dataPointsEl.textContent = appState.dataPoints.length;
-            
-            if (appState.startTime) {
-                const elapsed = Math.floor((Date.now() - appState.startTime) / 1000);
-                logTimeEl.textContent = `${elapsed}s`;
-            }
-            
-            // Beräkna ungefärlig filstorlek (1 datapunkt ≈ 200 byte)
-            const estimatedSize = (appState.dataPoints.length * 200) / 1024;
-            fileSizeEl.textContent = `${estimatedSize.toFixed(1)} KB`;
-        }
-
-        // Starta loggning
-        async function startLogging() {
-            if (appState.isLogging) return;
-            
-            try {
-                appState.isLogging = true;
-                appState.isPaused = false;
-                appState.startTime = Date.now();
-                
-                startBtn.disabled = true;
-                pauseBtn.disabled = false;
-                stopBtn.disabled = false;
-                exportBtn.disabled = true;
-                
-                // Starta GPS
-                if (navigator.geolocation) {
-                    appState.geoWatchId = navigator.geolocation.watchPosition(
-                        (position) => {
-                            const gpsValue = `${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)}`;
-                            updateSensorStatus('gps', true, gpsValue);
-                        },
-                        (error) => {
-                            console.error('GPS error:', error);
-                            updateSensorStatus('gps', false);
-                        },
-                        { 
-                            enableHighAccuracy: true, 
-                            maximumAge: 1000,
-                            timeout: 5000
-                        }
-                    );
-                } else {
-                    updateSensorStatus('gps', false);
-                }
-                
-                // Starta accelerometer/gyroskop loggning
-                if (window.DeviceMotionEvent) {
-                    window.addEventListener('devicemotion', handleMotion);
-                    updateSensorStatus('accelerometer', true);
-                    updateSensorStatus('gyroscope', true);
-                } else {
-                    updateSensorStatus('accelerometer', false);
-                    updateSensorStatus('gyroscope', false);
-                }
-                
-                // Starta magnetometer/kompass loggning
-                if (window.DeviceOrientationEvent) {
-                    window.addEventListener('deviceorientation', handleOrientation);
-                    updateSensorStatus('magnetometer', true);
-                } else {
-                    updateSensorStatus('magnetometer', false);
-                }
-                
-                // Starta loggintervallet
-                appState.logTimer = setInterval(logSensorData, appState.logInterval);
-                
-                updatePreview();
-                
-            } catch (error) {
-                console.error('Error starting logging:', error);
-                alert('Kunde inte starta loggning: ' + error.message);
-                stopLogging();
-            }
-        }
-
-        // Hantera motion data
-        function handleMotion(event) {
-            appState.currentMotion = {
-                acceleration: event.acceleration,
-                accelerationIncludingGravity: event.accelerationIncludingGravity,
-                rotationRate: event.rotationRate
-            };
-            
-            // Uppdatera sensorvärden i UI
-            if (event.acceleration) {
-                const accValue = `${event.acceleration.x?.toFixed(2) || '0'}, ${event.acceleration.y?.toFixed(2) || '0'}, ${event.acceleration.z?.toFixed(2) || '0'}`;
-                updateSensorStatus('accelerometer', true, accValue);
-            }
-            
-            if (event.rotationRate) {
-                const gyroValue = `${event.rotationRate.alpha?.toFixed(2) || '0'}, ${event.rotationRate.beta?.toFixed(2) || '0'}, ${event.rotationRate.gamma?.toFixed(2) || '0'}`;
-                updateSensorStatus('gyroscope', true, gyroValue);
-            }
-        }
-
-        // Hantera orientation data (magnetometer/kompass)
-        function handleOrientation(event) {
-            appState.currentOrientation = {
-                absolute: event.absolute,
-                alpha: event.alpha,  // Kompassriktning
-                beta: event.beta,
-                gamma: event.gamma
-            };
-            
-            // Uppdatera magnetometer i UI
-            if (event.alpha !== null) {
-                updateSensorStatus('magnetometer', true, `α:${event.alpha.toFixed(1)}°`);
-            }
-        }
-
-        // Logga sensordata
-        function logSensorData() {
-            if (appState.isPaused) return;
-            
-            const dataPoint = {
-                timestamp: new Date().toISOString(),
-                timeLocal: new Date().toLocaleString('sv-SE'),
-                logInterval: appState.logInterval
-            };
-            
-            // GPS data
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        dataPoint.latitude = position.coords.latitude;
-                        dataPoint.longitude = position.coords.longitude;
-                        dataPoint.altitude = position.coords.altitude;
-                        dataPoint.accuracy = position.coords.accuracy;
-                        dataPoint.speed = position.coords.speed;
-                    },
-                    () => {},
-                    { enableHighAccuracy: true, maximumAge: 0 }
-                );
-            }
-            
-            // Accelerometer och gyroskop data
-            if (appState.currentMotion) {
-                const acc = appState.currentMotion.acceleration;
-                const accGravity = appState.currentMotion.accelerationIncludingGravity;
-                const rot = appState.currentMotion.rotationRate;
-                
-                if (acc) {
-                    dataPoint.accX = acc.x;
-                    dataPoint.accY = acc.y;
-                    dataPoint.accZ = acc.z;
-                }
-                
-                if (accGravity) {
-                    dataPoint.accGravityX = accGravity.x;
-                    dataPoint.accGravityY = accGravity.y;
-                    dataPoint.accGravityZ = accGravity.z;
-                }
-                
-                if (rot) {
-                    dataPoint.rotAlpha = rot.alpha;
-                    dataPoint.rotBeta = rot.beta;
-                    dataPoint.rotGamma = rot.gamma;
-                }
-            }
-            
-            // Magnetometer/kompass data
-            if (appState.currentOrientation) {
-                dataPoint.orientationAlpha = appState.currentOrientation.alpha;
-                dataPoint.orientationBeta = appState.currentOrientation.beta;
-                dataPoint.orientationGamma = appState.currentOrientation.gamma;
-                dataPoint.orientationAbsolute = appState.currentOrientation.absolute;
-            }
-            
-            appState.dataPoints.push(dataPoint);
-            updateStats();
-            updatePreview();
-        }
-
-        // Pausa loggning
-        function pauseLogging() {
-            if (!appState.isLogging) return;
-            
-            appState.isPaused = !appState.isPaused;
-            
-            if (appState.isPaused) {
-                pauseBtn.innerHTML = '<i class="fas fa-play-circle"></i><span>Fortsätt</span>';
-                pauseBtn.classList.remove('btn-warning');
-                pauseBtn.classList.add('btn-success');
-            } else {
-                pauseBtn.innerHTML = '<i class="fas fa-pause-circle"></i><span>Pausa</span>';
-                pauseBtn.classList.remove('btn-success');
-                pauseBtn.classList.add('btn-warning');
-            }
-        }
-
-        // Stoppa loggning
-        function stopLogging() {
-            appState.isLogging = false;
-            appState.isPaused = false;
-            
-            // Stoppa intervallet
-            if (appState.logTimer) {
-                clearInterval(appState.logTimer);
-                appState.logTimer = null;
-            }
-            
-            // Stoppa GPS
-            if (appState.geoWatchId && navigator.geolocation) {
-                navigator.geolocation.clearWatch(appState.geoWatchId);
-                appState.geoWatchId = null;
-            }
-            
-            // Ta bort event listeners
-            window.removeEventListener('devicemotion', handleMotion);
-            window.removeEventListener('deviceorientation', handleOrientation);
-            
-            // Uppdatera knappar
-            startBtn.disabled = false;
-            pauseBtn.disabled = true;
-            stopBtn.disabled = true;
-            exportBtn.disabled = false;
-            
-            // Återställ pausknappen
-            pauseBtn.innerHTML = '<i class="fas fa-pause-circle"></i><span>Pausa</span>';
-            pauseBtn.classList.remove('btn-success');
-            pauseBtn.classList.add('btn-warning');
-            
-            // Uppdatera sensorstatus
-            Object.keys(appState.sensorsActive).forEach(sensorId => {
-                updateSensorStatus(sensorId, false);
-            });
-            
-            updateStats();
-        }
-
-        // SAMMA EXPORTMETOD SOM I RESTAURANGRÄKNAREN
-        function exportToCSV() {
-            if (appState.dataPoints.length === 0) {
-                alert('Ingen data att exportera!');
-                return;
-            }
-            
-            // Skapa CSV huvud
-            const headers = [
-                'Timestamp', 'Local Time', 'Latitude', 'Longitude', 'Altitude', 'Accuracy (m)', 'Speed (m/s)',
-                'Acc X (m/s²)', 'Acc Y (m/s²)', 'Acc Z (m/s²)',
-                'Acc Gravity X', 'Acc Gravity Y', 'Acc Gravity Z',
-                'Rotation Alpha (°/s)', 'Rotation Beta (°/s)', 'Rotation Gamma (°/s)',
-                'Orientation Alpha (°)', 'Orientation Beta (°)', 'Orientation Gamma (°)', 'Orientation Absolute'
-            ];
-            
-            let csvContent = headers.join(',') + '\n';
-            
-            // Lägg till datarader
-            appState.dataPoints.forEach(point => {
-                const row = [
-                    point.timestamp,
-                    point.timeLocal,
-                    point.latitude || '',
-                    point.longitude || '',
-                    point.altitude || '',
-                    point.accuracy || '',
-                    point.speed || '',
-                    point.accX || '',
-                    point.accY || '',
-                    point.accZ || '',
-                    point.accGravityX || '',
-                    point.accGravityY || '',
-                    point.accGravityZ || '',
-                    point.rotAlpha || '',
-                    point.rotBeta || '',
-                    point.rotGamma || '',
-                    point.orientationAlpha || '',
-                    point.orientationBeta || '',
-                    point.orientationGamma || '',
-                    point.orientationAbsolute || ''
-                ];
-                
-                csvContent += row.join(',') + '\n';
-            });
-            
-            // Använd samma nedladdningsmetod som i restaurangräknaren
-            downloadCSV(csvContent, `sensor-data-${new Date().toISOString().replace(/[:.]/g, '-')}.csv`);
-            
-            // Visa bekräftelse
-            alert(`CSV-fil exporterad med ${appState.dataPoints.length} datapunkter!`);
-        }
-
-        // EXAKT SAMMA downloadCSV FUNKTION SOM I RESTAURANGRÄKNAREN
-        function downloadCSV(csv, filename) {
-            // Skapa en blob av CSV-innehållet
-            var csvFile = new Blob([csv], {type: "text/csv"});
-            
-            // Skapa en nedladdningslänk
-            var downloadLink = document.createElement("a");
-            
-            // Skapa en URL för bloben
-            downloadLink.href = URL.createObjectURL(csvFile);
-            downloadLink.download = filename;
-            downloadLink.style.display = "none";
-            
-            // Lägg till länken i dokumentet och klicka på den
-            document.body.appendChild(downloadLink);
-            downloadLink.click();
-            
-            // Ta bort länken efter nedladdning
-            setTimeout(function() {
-                document.body.removeChild(downloadLink);
-                URL.revokeObjectURL(downloadLink.href);
-            }, 100);
-        }
-
-        // Ändra loggningsintervall
-        function changeInterval(newInterval) {
-            appState.logInterval = parseInt(newInterval);
-            
-            // Uppdatera aktiva knappar
-            intervalButtons.forEach(btn => {
-                if (parseInt(btn.dataset.interval) === appState.logInterval) {
-                    btn.classList.add('active');
-                } else {
-                    btn.classList.remove('active');
-                }
-            });
-            
-            // Om loggning pågår, starta om intervallet med ny frekvens
-            if (appState.isLogging && appState.logTimer) {
-                clearInterval(appState.logTimer);
-                appState.logTimer = setInterval(logSensorData, appState.logInterval);
-            }
-        }
-
-        // Event listeners
-        startBtn.addEventListener('click', startLogging);
-        pauseBtn.addEventListener('click', pauseLogging);
-        stopBtn.addEventListener('click', stopLogging);
-        exportBtn.addEventListener('click', exportToCSV);
-
-        intervalButtons.forEach(btn => {
-            btn.addEventListener('click', () => {
-                changeInterval(btn.dataset.interval);
-            });
-        });
-
-        // Visa instruktioner vid start
-        window.addEventListener('load', () => {
-            initializeSensorStatus();
-            updatePreview();
-            updateStats();
-            
-            // Visa en kort instruktion
-            setTimeout(() => {
-                if (appState.dataPoints.length === 0) {
-                    dataPreviewEl.innerHTML = 'Välkommen till iOS Sensor Data Logger!<br><br>' +
-                                            '1. Välj ett loggningsintervall (100ms - 2s)<br>' +
-                                            '2. Klicka på "Starta Loggning"<br>' +
-                                            '3. Godkänn GPS-tillstånd i Safari<br>' +
-                                            '4. Stoppa loggning när du är klar<br>' +
-                                            '5. Exportera till CSV-fil<br><br>' +
-                                            '<strong>Nedladdning:</strong> CSV-filen laddas ned direkt och sparas i "Nedladdningar" på din iPhone.';
-                }
-            }, 500);
-        });
-
-        // Varna om att ladda om sidan (förlorar data)
-        window.addEventListener('beforeunload', (e) => {
-            if (appState.dataPoints.length > 0 && appState.isLogging) {
-                e.preventDefault();
-                e.returnValue = 'Du har osparad loggdata. Är du säker på att du vill ladda om sidan?';
-                return e.returnValue;
-            }
-        });
-    </script>
+        <!-- Ytterligare kort... -->
+    </div>
 </body>
 </html>
