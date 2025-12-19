@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personligt hörseltest - Korrigerad version</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a237e 0%, #311b92 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            color: #bb86fc;
+            font-size: 2.2em;
+        }
+        
+        .subtitle {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #b0b0ff;
+            font-size: 1.1em;
+        }
+        
+        .warning {
+            background-color: rgba(255, 152, 0, 0.2);
+            border-left: 5px solid #ff9800;
+            padding: 15px;
+            margin-bottom: 25px;
+            border-radius: 8px;
+            font-size: 0.95em;
+        }
+        
+        .warning strong {
+            color: #ffcc80;
+        }
+        
+        .test-area {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        
+        .test-info {
+            display: flex;
+            justify-content: space-between;
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            border-radius: 15px;
+        }
+        
+        .info-box {
+            text-align: center;
+            flex: 1;
+        }
+        
+        .info-label {
+            font-size: 0.9em;
+            color: #b0b0ff;
+            margin-bottom: 5px;
+        }
+        
+        .info-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #bb86fc;
+        }
+        
+        .test-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .hearing-button {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #4a148c, #7b1fa2);
+            border: 8px solid #03dac6;
+            color: white;
+            font-size: 1.8em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+            margin: 20px 0;
+            user-select: none;
+        }
+        
+        .hearing-button:hover {
+            transform: scale(1.03);
+            background: linear-gradient(145deg, #7b1fa2, #4a148c);
+        }
+        
+        .hearing-button.active {
+            background: linear-gradient(145deg, #00c853, #64dd17);
+            border-color: #00e676;
+            box-shadow: 0 0 30px rgba(0, 200, 83, 0.7);
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 30px rgba(0, 200, 83, 0.7); }
+            50% { box-shadow: 0 0 50px rgba(0, 200, 83, 0.9); }
+            100% { box-shadow: 0 0 30px rgba(0, 200, 83, 0.7); }
+        }
+        
+        .hearing-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .volume-instruction {
+            text-align: center;
+            color: #b0b0ff;
+            font-size: 1.1em;
+            margin: 10px 0;
+        }
+        
+        .instructions {
+            background-color: rgba(3, 218, 198, 0.1);
+            border-left: 5px solid #03dac6;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            font-size: 1em;
+            line-height: 1.5;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(90deg, #03dac6, #018786);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(90deg, #bb86fc, #3700b3);
+            color: white;
+        }
+        
+        .btn-danger {
+            background: linear-gradient(90deg, #cf6679, #b00020);
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .result-area {
+            margin-top: 40px;
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 25px;
+            border-radius: 15px;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+            margin-bottom: 30px;
+        }
+        
+        .result-data {
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            border-radius: 10px;
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            color: white;
+        }
+        
+        th, td {
+            padding: 12px 15px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        th {
+            background-color: rgba(187, 134, 252, 0.2);
+            color: #bb86fc;
+            font-weight: bold;
+        }
+        
+        .footer-note {
+            text-align: center;
+            margin-top: 30px;
+            color: #aaa;
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .ear-selector {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        
+        .ear-btn {
+            padding: 15px 30px;
+            background-color: rgba(187, 134, 252, 0.2);
+            border: 2px solid transparent;
+            border-radius: 50px;
+            color: white;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .ear-btn.active {
+            background-color: rgba(3, 218, 198, 0.3);
+            border-color: #03dac6;
+        }
+        
+        .calibration-note {
+            font-size: 0.9em;
+            color: #ffcc80;
+            margin-top: 10px;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            .hearing-button {
+                width: 170px;
+                height: 170px;
+                font-size: 1.5em;
+            }
+            
+            .test-info {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .chart-container {
+                height: 300px;
+            }
+            
+            .ear-selector {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Personligt Hörseltest - Korrigerad</h1>
+        <p class="subtitle">Ren tonaudiometri med korrekt testlogik - Audiogram som resultat</p>
+        
+        <div class="warning">
+            <strong>Viktigt:</strong> Detta test ger endast en ungefärlig bedömning och ersätter inte ett professionellt hörseltest hos audionom eller läkare. Testet är inte kalibrerat och resultaten kan variera beroende på hårdvara, miljö och individuella skillnader.
+        </div>
+        
+        <div class="instructions">
+            <p><strong>Instruktioner:</strong> Testet kommer att spela toner vid olika frekvenser och volymer. Tryck på knappen när du hör en ton. Testet börjar vid en högre volym och sänks gradvis tills du inte längre hör tonen. Varje frekvens testas separat.</p>
+        </div>
+        
+        <div class="ear-selector">
+            <button id="left-ear-btn" class="ear-btn">Vänster öra</button>
+            <button id="right-ear-btn" class="ear-btn active">Höger öra</button>
+            <button id="both-ears-btn" class="ear-btn">Båda öronen</button>
+        </div>
+        
+        <div class="test-area">
+            <div class="test-info">
+                <div class="info-box">
+                    <div class="info-label">Frekvens</div>
+                    <div class="info-value" id="frequency-display">-- Hz</div>
+                </div>
+                <div class="info-box">
+                    <div class="info-label">Ljudstyrka</div>
+                    <div class="info-value" id="volume-display">-- dB</div>
+                </div>
+                <div class="info-box">
+                    <div class="info-label">Test</div>
+                    <div class="info-value" id="progress-display">Ej startad</div>
+                </div>
+            </div>
+            
+            <div class="test-controls">
+                <button id="hearing-button" class="hearing-button" disabled>
+                    Testet är inte aktivt
+                </button>
+                
+                <p class="volume-instruction">Tryck här eller använd VOLYM UPP-knappen när du hör en ton</p>
+                <p class="calibration-note">Obs: dB-nivåerna är relativa och inte kalibrerade</p>
+                
+                <div class="buttons">
+                    <button id="start-btn" class="btn btn-primary">
+                        <span>▶</span> Starta Test
+                    </button>
+                    <button id="stop-btn" class="btn btn-danger" disabled>
+                        <span>⏹</span> Avbryt Test
+                    </button>
+                    <button id="save-csv-btn" class="btn btn-secondary hidden">
+                        <span>📊</span> Spara CSV
+                    </button>
+                    <button id="save-chart-btn" class="btn btn-secondary hidden">
+                        <span>🖼️</span> Spara Audiogram
+                    </button>
+                    <button id="retry-btn" class="btn btn-secondary hidden">
+                        <span>🔄</span> Testa Om
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div id="result-area" class="result-area hidden">
+            <h2 style="text-align: center; margin-bottom: 20px; color: #bb86fc;">Testresultat</h2>
+            
+            <div class="chart-container">
+                <canvas id="audiogram-chart"></canvas>
+            </div>
+            
+            <div class="result-data">
+                <table id="result-table">
+                    <thead>
+                        <tr>
+                            <th>Frekvens (Hz)</th>
+                            <th>Hörseltröskel (relativ dB)</th>
+                            <th>Bedömning</th>
+                        </tr>
+                    </thead>
+                    <tbody id="result-table-body">
+                        <!-- Resultaten läggs till här dynamiskt -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="footer-note">
+            <p>Testet kontrollerar hörseln vid frekvenserna 125, 250, 500, 1000, 2000, 4000 och 8000 Hz.</p>
+            <p>För bästa resultat: Använd högkvalitativa hörlurar i ett tyst rum. Testa varje öra separat.</p>
+            <p>Testlogiken: Börjar vid 50 dB, sänker med 10 dB när du hör tonen, upprepar tills du inte hör, går sedan till nästa frekvens.</p>
+        </div>
+    </div>
+
+    <script>
+        // Testparametrar - korrigerad version
+        const frequencies = [125, 250, 500, 1000, 2000, 4000, 8000];
+        
+        // Startvolym och steg (relativa dB)
+        const startVolume = 50; // dB
+        const volumeStep = 10;  // dB
+        const minVolume = -10;  // dB (lägsta nivå)
+        
+        // Testtillstånd
+        let currentFrequencyIndex = 0;
+        let currentVolume = startVolume;
+        let testResults = [];
+        let isTestRunning = false;
+        let audioContext = null;
+        let oscillator = null;
+        let gainNode = null;
+        let chart = null;
+        let testEar = "höger"; // "vänster", "höger", "båda"
+        let isPlayingTone = false;
+        let responseReceived = false;
+        let toneTimeout = null;
+        let currentFrequencyThreshold = null;
+        
+        // DOM-element
+        const startBtn = document.getElementById('start-btn');
+        const stopBtn = document.getElementById('stop-btn');
+        const hearingButton = document.getElementById('hearing-button');
+        const saveCsvBtn = document.getElementById('save-csv-btn');
+        const saveChartBtn = document.getElementById('save-chart-btn');
+        const retryBtn = document.getElementById('retry-btn');
+        const resultArea = document.getElementById('result-area');
+        const frequencyDisplay = document.getElementById('frequency-display');
+        const volumeDisplay = document.getElementById('volume-display');
+        const progressDisplay = document.getElementById('progress-display');
+        const resultTableBody = document.getElementById('result-table-body');
+        const leftEarBtn = document.getElementById('left-ear-btn');
+        const rightEarBtn = document.getElementById('right-ear-btn');
+        const bothEarsBtn = document.getElementById('both-ears-btn');
+        
+        // Öronval
+        leftEarBtn.addEventListener('click', () => setEar('vänster'));
+        rightEarBtn.addEventListener('click', () => setEar('höger'));
+        bothEarsBtn.addEventListener('click', () => setEar('båda'));
+        
+        function setEar(ear) {
+            testEar = ear;
+            leftEarBtn.classList.remove('active');
+            rightEarBtn.classList.remove('active');
+            bothEarsBtn.classList.remove('active');
+            
+            if (ear === 'vänster') leftEarBtn.classList.add('active');
+            if (ear === 'höger') rightEarBtn.classList.add('active');
+            if (ear === 'båda') bothEarsBtn.classList.add('active');
+        }
+        
+        // Starta testet
+        startBtn.addEventListener('click', startTest);
+        
+        // Avbryt testet
+        stopBtn.addEventListener('click', stopTest);
+        
+        // Spara CSV
+        saveCsvBtn.addEventListener('click', saveCSV);
+        
+        // Spara audiogram som bild
+        saveChartBtn.addEventListener('click', saveChartAsImage);
+        
+        // Testa om
+        retryBtn.addEventListener('click', retryTest);
+        
+        // Hantera hörselknapptryck
+        hearingButton.addEventListener('click', function() {
+            if (isTestRunning && isPlayingTone && !responseReceived) {
+                handleHearingResponse();
+            }
+        });
+        
+        // Hantera fysiska volymknappar (för mobil)
+        let volumeUpBlocked = false;
+        document.addEventListener('keydown', function(event) {
+            // Volym upp-knappen (för mobil)
+            if (event.key === 'VolumeUp' || event.code === 'VolumeUp' || 
+                (event.keyCode === 38 && event.altKey)) {
+                event.preventDefault();
+                if (isTestRunning && isPlayingTone && !responseReceived && !volumeUpBlocked) {
+                    handleHearingResponse();
+                    volumeUpBlocked = true;
+                    
+                    // Återställ blockering efter 500ms
+                    setTimeout(() => {
+                        volumeUpBlocked = false;
+                    }, 500);
+                }
+            }
+        });
+        
+        // Touch-events för mobila enheter
+        hearingButton.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            if (isTestRunning && isPlayingTone && !responseReceived) {
+                hearingButton.classList.add('active');
+                handleHearingResponse();
+            }
+        });
+        
+        hearingButton.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            hearingButton.classList.remove('active');
+        });
+        
+        // Starta hörseltest - KORRIGERAD LOGIK
+        function startTest() {
+            if (isTestRunning) return;
+            
+            // Återställ testdata
+            currentFrequencyIndex = 0;
+            testResults = [];
+            resultTableBody.innerHTML = '';
+            
+            // Uppdatera UI
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+            hearingButton.disabled = false;
+            hearingButton.textContent = "Tryck när du hör tonen";
+            resultArea.classList.add('hidden');
+            saveCsvBtn.classList.add('hidden');
+            saveChartBtn.classList.add('hidden');
+            retryBtn.classList.add('hidden');
+            
+            // Initiera Web Audio API
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            
+            isTestRunning = true;
+            progressDisplay.textContent = "Förbereder...";
+            
+            // Starta testet med första frekvensen
+            setTimeout(() => {
+                testNextFrequency();
+            }, 1000);
+        }
+        
+        // Testa nästa frekvens
+        function testNextFrequency() {
+            if (!isTestRunning) return;
+            
+            // Har vi testat alla frekvenser?
+            if (currentFrequencyIndex >= frequencies.length) {
+                finishTest();
+                return;
+            }
+            
+            // Återställ för ny frekvens
+            currentVolume = startVolume;
+            currentFrequencyThreshold = null;
+            responseReceived = false;
+            
+            // Uppdatera display
+            const frequency = frequencies[currentFrequencyIndex];
+            frequencyDisplay.textContent = `${frequency} Hz`;
+            volumeDisplay.textContent = `${currentVolume} dB`;
+            progressDisplay.textContent = `Testar ${currentFrequencyIndex + 1}/${frequencies.length}`;
+            
+            // Starta test för denna frekvens
+            testCurrentFrequency();
+        }
+        
+        // Testa aktuell frekvens
+        function testCurrentFrequency() {
+            if (!isTestRunning) return;
+            
+            // Har vi hittat tröskeln för denna frekvens?
+            if (currentFrequencyThreshold !== null) {
+                // Spara resultat och gå till nästa frekvens
+                testResults.push({
+                    frequency: frequencies[currentFrequencyIndex],
+                    threshold: currentFrequencyThreshold,
+                    ear: testEar
+                });
+                
+                currentFrequencyIndex++;
+                setTimeout(() => {
+                    testNextFrequency();
+                }, 1000);
+                return;
+            }
+            
+            // Har vi nått minimum volym utan att hitta tröskeln?
+            if (currentVolume < minVolume) {
+                // Spara att tröskeln är under minimum
+                testResults.push({
+                    frequency: frequencies[currentFrequencyIndex],
+                    threshold: minVolume,
+                    ear: testEar,
+                    note: "Hörsel bättre än testat intervall"
+                });
+                
+                currentFrequencyIndex++;
+                setTimeout(() => {
+                    testNextFrequency();
+                }, 1000);
+                return;
+            }
+            
+            // Spela tonen vid aktuell volym
+            playTestTone();
+        }
+        
+        // Spela testton
+        function playTestTone() {
+            if (!isTestRunning) return;
+            
+            stopTone(); // Stoppa eventuell tidigare ton
+            
+            const frequency = frequencies[currentFrequencyIndex];
+            
+            // Uppdatera display
+            frequencyDisplay.textContent = `${frequency} Hz`;
+            volumeDisplay.textContent = `${currentVolume} dB`;
+            
+            // Spela tonen
+            playTone(frequency, currentVolume);
+            isPlayingTone = true;
+            responseReceived = false;
+            
+            // Aktivera knappen
+            hearingButton.textContent = "Tryck när du hör tonen";
+            hearingButton.style.background = "linear-gradient(145deg, #4a148c, #7b1fa2)";
+            
+            // Timeout för tonen (1.5 sekunder)
+            clearTimeout(toneTimeout);
+            toneTimeout = setTimeout(() => {
+                if (isPlayingTone && !responseReceived) {
+                    // Användaren hörde inte tonen vid denna volym
+                    handleNoResponse();
+                }
+            }, 1500);
+        }
+        
+        // Spela en ton med Web Audio API
+        function playTone(frequency, volumeDB) {
+            if (!audioContext) return;
+            
+            // Konvertera dB till gain (0-1)
+            let gainValue = dbToGain(volumeDB);
+            
+            // Skapa oscillator och gain node
+            oscillator = audioContext.createOscillator();
+            gainNode = audioContext.createGain();
+            
+            // Konfigurera oscillatorn
+            oscillator.type = 'sine'; // Ren sinusvåg
+            oscillator.frequency.value = frequency;
+            
+            // Konfigurera gain med fade-in för att undvika klick
+            gainNode.gain.setValueAtTime(0.001, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(gainValue, audioContext.currentTime + 0.1);
+            
+            // Koppla ihop noderna
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            // Starta oscillatorn
+            oscillator.start();
+            
+            // Stoppa efter 1 sekund (om inte användaren svarar tidigare)
+            oscillator.stop(audioContext.currentTime + 1.5);
+            
+            // Hantera när tonen slutar spela
+            oscillator.onended = () => {
+                if (isPlayingTone && !responseReceived) {
+                    // Tonen slutade spela utan svar
+                    handleNoResponse();
+                }
+            };
+        }
+        
+        // Konvertera dB till gain
+        function dbToGain(db) {
+            // 50 dB = gain 0.5, 0 dB = gain 0.1, -10 dB = gain 0.05
+            if (db >= 0) {
+                return 0.1 + (db / 100) * 0.9;
+            } else {
+                return 0.05 + ((db + 10) / 10) * 0.05;
+            }
+        }
+        
+        // Stoppa aktuell ton
+        function stopTone() {
+            if (oscillator) {
+                try {
+                    // Lägg till fade-out för att undvika klickljud
+                    if (gainNode && audioContext) {
+                        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.05);
+                        setTimeout(() => {
+                            try {
+                                oscillator.stop();
+                                oscillator.disconnect();
+                            } catch(e) {
+                                // Ignorera fel om oscillatorn redan är stoppad
+                            }
+                        }, 50);
+                    } else {
+                        oscillator.stop();
+                        oscillator.disconnect();
+                    }
+                } catch(e) {
+                    // Ignorera fel
+                }
+                oscillator = null;
+                isPlayingTone = false;
+            }
+            clearTimeout(toneTimeout);
+        }
+        
+        // Hantera när användaren hör tonen
+        function handleHearingResponse() {
+            if (!isTestRunning || !isPlayingTone || responseReceived) return;
+            
+            responseReceived = true;
+            
+            // Visa feedback
+            hearingButton.classList.add('active');
+            hearingButton.textContent = "✓ Ton hörd!";
+            
+            // Spara aktuell volym som tröskel (om det är den första gången)
+            if (currentFrequencyThreshold === null) {
+                currentFrequencyThreshold = currentVolume;
+            }
+            
+            // Sänk volymen för nästa test
+            currentVolume -= volumeStep;
+            
+            // Stoppa tonen
+            stopTone();
+            
+            // Vänta lite sedan testa lägre volym
+            setTimeout(() => {
+                hearingButton.classList.remove('active');
+                testCurrentFrequency();
+            }, 1000);
+        }
+        
+        // Hantera när användaren INTE hör tonen
+        function handleNoResponse() {
+            if (!isTestRunning || responseReceived) return;
+            
+            responseReceived = true;
+            
+            // Om vi inte har hittat någon tröskel än, sätt tröskeln till föregående volym
+            if (currentFrequencyThreshold === null) {
+                // Användaren hörde inte ens vid startvolym
+                currentFrequencyThreshold = startVolume + volumeStep; // Markerar dålig hörsel
+            }
+            
+            // Visa feedback
+            hearingButton.textContent = "Ton inte hörd";
+            hearingButton.style.background = "linear-gradient(145deg, #b00020, #cf6679)";
+            
+            // Stoppa tonen
+            stopTone();
+            
+            // Vänta lite sedan gå vidare
+            setTimeout(() => {
+                hearingButton.style.background = "linear-gradient(145deg, #4a148c, #7b1fa2)";
+                testCurrentFrequency();
+            }, 1500);
+        }
+        
+        // Avsluta testet och visa resultat
+        function finishTest() {
+            isTestRunning = false;
+            stopTone();
+            
+            // Uppdatera UI
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            hearingButton.disabled = true;
+            hearingButton.textContent = "Testet är klart";
+            
+            // Rensa display
+            frequencyDisplay.textContent = "-- Hz";
+            volumeDisplay.textContent = "-- dB";
+            progressDisplay.textContent = "Testet klart";
+            
+            // Visa resultat
+            displayResults();
+            resultArea.classList.remove('hidden');
+            saveCsvBtn.classList.remove('hidden');
+            saveChartBtn.classList.remove('hidden');
+            retryBtn.classList.remove('hidden');
+        }
+        
+        // Avbryt testet
+        function stopTest() {
+            isTestRunning = false;
+            stopTone();
+            
+            // Uppdatera UI
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            hearingButton.disabled = true;
+            hearingButton.textContent = "Test avbrutet";
+            
+            // Rensa display
+            frequencyDisplay.textContent = "-- Hz";
+            volumeDisplay.textContent = "-- dB";
+            progressDisplay.textContent = "Avbrutet";
+        }
+        
+        // Testa om
+        function retryTest() {
+            // Återställ UI
+            resultArea.classList.add('hidden');
+            saveCsvBtn.classList.add('hidden');
+            saveChartBtn.classList.add('hidden');
+            retryBtn.classList.add('hidden');
+            
+            // Starta nytt test
+            setTimeout(startTest, 500);
+        }
+        
+        // Visa testresultat
+        function displayResults() {
+            // Förbered data för tabell och diagram
+            const tableData = [];
+            const chartData = [];
+            
+            // Skapa dataset för varje öra
+            const leftEarData = [];
+            const rightEarData = [];
+            const bothEarsData = [];
+            
+            testResults.forEach(result => {
+                // Bestäm bedömning baserat på tröskel
+                let assessment = "Ej testad";
+                let thresholdValue = result.threshold;
+                
+                if (thresholdValue !== null) {
+                    if (thresholdValue <= 20) {
+                        assessment = "Normal hörsel";
+                    } else if (thresholdValue <= 40) {
+                        assessment = "Lätt nedsättning";
+                    } else if (thresholdValue <= 60) {
+                        assessment = "Måttlig nedsättning";
+                    } else if (thresholdValue <= 80) {
+                        assessment = "Svår nedsättning";
+                    } else {
+                        assessment = "Mycket svår nedsättning";
+                    }
+                    
+                    // Lägg till i diagramdata baserat på öra
+                    const dataPoint = {
+                        x: result.frequency,
+                        y: thresholdValue
+                    };
+                    
+                    if (result.ear === 'vänster' || testEar === 'vänster') {
+                        leftEarData.push(dataPoint);
+                    } else if (result.ear === 'höger' || testEar === 'höger') {
+                        rightEarData.push(dataPoint);
+                    } else {
+                        bothEarsData.push(dataPoint);
+                    }
+                }
+                
+                // Lägg till i tabelldata
+                tableData.push({
+                    frequency: result.frequency,
+                    threshold: thresholdValue !== null ? thresholdValue : "Hördes inte",
+                    assessment: assessment,
+                    ear: result.ear
+                });
+            });
+            
+            // Fyll i resultattabellen
+            resultTableBody.innerHTML = '';
+            tableData.forEach(data => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${data.frequency}</td>
+                    <td>${data.threshold}</td>
+                    <td>${data.assessment}</td>
+                `;
+                resultTableBody.appendChild(row);
+            });
+            
+            // Skapa eller uppdatera diagrammet
+            createChart(leftEarData, rightEarData, bothEarsData);
+        }
+        
+        // Skapa audiogram med Chart.js
+        function createChart(leftData, rightData, bothData) {
+            const ctx = document.getElementById('audiogram-chart').getContext('2d');
+            
+            // Om det redan finns ett diagram, förstör det först
+            if (chart) {
+                chart.destroy();
+            }
+            
+            // Sortera data efter frekvens
+            const sortByFrequency = (a, b) => a.x - b.x;
+            leftData.sort(sortByFrequency);
+            rightData.sort(sortByFrequency);
+            bothData.sort(sortByFrequency);
+            
+            // Skapa nytt diagram
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: []
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            type: 'logarithmic',
+                            title: {
+                                display: true,
+                                text: 'Frekvens (Hz)',
+                                color: '#ffffff',
+                                font: {
+                                    size: 16,
+                                    weight: 'bold'
+                                }
+                            },
+                            ticks: {
+                                color: '#b0b0ff',
+                                callback: function(value) {
+                                    return value + ' Hz';
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        },
+                        y: {
+                            reverse: true, // Högre dB längre ner (standard i audiogram)
+                            title: {
+                                display: true,
+                                text: 'Relativ ljudstyrka (dB)',
+                                color: '#ffffff',
+                                font: {
+                                    size: 16,
+                                    weight: 'bold'
+                                }
+                            },
+                            ticks: {
+                                color: '#b0b0ff'
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            min: -20,
+                            max: 70
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#ffffff',
+                                font: {
+                                    size: 14
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.parsed.y} dB vid ${context.parsed.x} Hz`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Lägg till dataset baserat på vilket öra som testats
+            if (testEar === 'vänster' && leftData.length > 0) {
+                chart.data.datasets.push({
+                    label: 'Vänster öra',
+                    data: leftData,
+                    borderColor: '#03dac6',
+                    backgroundColor: 'rgba(3, 218, 198, 0.1)',
+                    borderWidth: 3,
+                    pointBackgroundColor: '#03dac6',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 6,
+                    fill: true,
+                    tension: 0.2
+                });
+            } else if (testEar === 'höger' && rightData.length > 0) {
+                chart.data.datasets.push({
+                    label: 'Höger öra',
+                    data: rightData,
+                    borderColor: '#bb86fc',
+                    backgroundColor: 'rgba(187, 134, 252, 0.1)',
+                    borderWidth: 3,
+                    pointBackgroundColor: '#bb86fc',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 6,
+                    fill: true,
+                    tension: 0.2
+                });
+            } else if (testEar === 'båda' && bothData.length > 0) {
+                chart.data.datasets.push({
+                    label: 'Båda öronen',
+                    data: bothData,
+                    borderColor: '#cf6679',
+                    backgroundColor: 'rgba(207, 102, 121, 0.1)',
+                    borderWidth: 3,
+                    pointBackgroundColor: '#cf6679',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 6,
+                    fill: true,
+                    tension: 0.2
+                });
+            }
+            
+            chart.update();
+        }
+        
+        // Spara resultat som CSV-fil
+        function saveCSV() {
+            let csvContent = "data:text/csv;charset=utf-8,Frekvens (Hz),Relativ hörseltröskel (dB),Bedömning,Öra\n";
+            
+            testResults.forEach(result => {
+                let assessment = "";
+                let threshold = result.threshold !== null ? result.threshold : "Hördes inte";
+                
+                if (result.threshold !== null) {
+                    if (result.threshold <= 20) {
+                        assessment = "Normal hörsel";
+                    } else if (result.threshold <= 40) {
+                        assessment = "Lätt nedsättning";
+                    } else if (result.threshold <= 60) {
+                        assessment = "Måttlig nedsättning";
+                    } else if (result.threshold <= 80) {
+                        assessment = "Svår nedsättning";
+                    } else {
+                        assessment = "Mycket svår nedsättning";
+                    }
+                } else {
+                    assessment = "Hördes inte";
+                }
+                
+                csvContent += `${result.frequency},${threshold},${assessment},${result.ear}\n`;
+            });
+            
+            // Skapa nedladdningslänk
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `hörseltest_${testEar}_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            
+            // Trigga nedladdning
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        // Spara audiogram som bild
+        function saveChartAsImage() {
+            if (!chart) return;
+            
+            // Hämta diagrammets canvas
+            const canvas = document.getElementById('audiogram-chart');
+            
+            // Skapa en temporär länk för nedladdning
+            const link = document.createElement('a');
+            link.download = `audiogram_${testEar}_${new Date().toISOString().slice(0,10)}.png`;
+            link.href = canvas.toDataURL('image/png');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        // Stäng Web Audio API när sidan lämnas
+        window.addEventListener('beforeunload', () => {
+            if (audioContext) {
+                audioContext.close();
+            }
+        });
+        
+        // Initiera med en enkel instruktion
+        console.log("Hörseltest app redo. Klicka på 'Starta Test' för att börja.");
+    </script>
+</body>
+</html>
