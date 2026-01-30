@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Budget Shopping Calculator</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4CAF50;
+            --primary-dark: #388E3C;
+            --secondary: #2196F3;
+            --danger: #f44336;
+            --light: #f9f9f9;
+            --dark: #333;
+            --gray: #e0e0e0;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: var(--dark);
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 100%;
+            padding: 20px 15px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--gray);
+        }
+        
+        h1 {
+            color: var(--primary-dark);
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+            font-size: 1rem;
+        }
+        
+        .budget-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: var(--shadow);
+        }
+        
+        .budget-input {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 15px;
+        }
+        
+        .budget-input label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--dark);
+        }
+        
+        .budget-input input {
+            padding: 15px;
+            border: 2px solid var(--gray);
+            border-radius: 8px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            text-align: center;
+        }
+        
+        .budget-display {
+            display: flex;
+            justify-content: space-between;
+            background-color: #E8F5E9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        
+        .budget-item {
+            text-align: center;
+            flex: 1;
+        }
+        
+        .budget-item h3 {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .budget-amount {
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+        
+        .remaining {
+            color: var(--primary-dark);
+        }
+        
+        .spent {
+            color: var(--secondary);
+        }
+        
+        .add-item-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: var(--shadow);
+        }
+        
+        .add-item-section h2 {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: var(--dark);
+        }
+        
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 15px;
+        }
+        
+        .input-group label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--dark);
+        }
+        
+        .input-group input {
+            padding: 15px;
+            border: 2px solid var(--gray);
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        
+        .btn {
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .btn-secondary {
+            background-color: var(--secondary);
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #1976D2;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background-color: #d32f2f;
+        }
+        
+        .quick-items {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 15px;
+        }
+        
+        .quick-item {
+            background-color: #f1f8ff;
+            border: 2px solid var(--secondary);
+            border-radius: 8px;
+            padding: 12px 5px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 600;
+        }
+        
+        .quick-item:hover {
+            background-color: var(--secondary);
+            color: white;
+        }
+        
+        .quick-item-price {
+            font-size: 0.85rem;
+            color: var(--secondary);
+            margin-top: 3px;
+        }
+        
+        .quick-item:hover .quick-item-price {
+            color: white;
+        }
+        
+        .items-list-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: var(--shadow);
+        }
+        
+        .items-list-section h2 {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: var(--dark);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .items-list {
+            list-style-type: none;
+        }
+        
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid var(--gray);
+        }
+        
+        .item-row:last-child {
+            border-bottom: none;
+        }
+        
+        .item-info {
+            flex: 1;
+        }
+        
+        .item-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        
+        .item-price {
+            color: var(--secondary);
+            font-weight: 600;
+            margin-left: 10px;
+        }
+        
+        .item-delete {
+            background: none;
+            border: none;
+            color: #aaa;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        
+        .item-delete:hover {
+            color: var(--danger);
+        }
+        
+        .empty-list {
+            text-align: center;
+            padding: 30px 0;
+            color: #999;
+            font-style: italic;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .actions .btn {
+            flex: 1;
+        }
+        
+        .export-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+        
+        .export-section p {
+            margin-bottom: 15px;
+            color: #666;
+        }
+        
+        .alert {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--primary);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            display: none;
+            z-index: 1000;
+            animation: fadeIn 0.3s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .negative-budget {
+            color: var(--danger) !important;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            color: #888;
+            font-size: 0.9rem;
+            border-top: 1px solid var(--gray);
+        }
+        
+        @media (min-width: 768px) {
+            .container {
+                max-width: 700px;
+                padding: 30px 20px;
+            }
+            
+            .quick-items {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .quick-items {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .budget-display {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-shopping-cart"></i> Budget Shopping Calculator</h1>
+            <p class="subtitle">Håll koll på dina handlingskostnader i realtid</p>
+        </header>
+        
+        <section class="budget-section">
+            <div class="budget-input">
+                <label for="budget"><i class="fas fa-wallet"></i> Ange din budget (kr)</label>
+                <input type="number" id="budget" placeholder="Ange belopp" min="0" step="0.01">
+            </div>
+            
+            <div class="budget-display">
+                <div class="budget-item">
+                    <h3>Kvar att spendera</h3>
+                    <div id="remainingAmount" class="budget-amount remaining">0 kr</div>
+                </div>
+                <div class="budget-item">
+                    <h3>Totalt spenderat</h3>
+                    <div id="spentAmount" class="budget-amount spent">0 kr</div>
+                </div>
+            </div>
+        </section>
+        
+        <section class="add-item-section">
+            <h2><i class="fas fa-plus-circle"></i> Lägg till vara</h2>
+            
+            <div class="input-group">
+                <label for="itemName">Varanamn</label>
+                <input type="text" id="itemName" placeholder="T.ex. Morötter">
+            </div>
+            
+            <div class="input-group">
+                <label for="itemPrice">Pris (kr)</label>
+                <input type="number" id="itemPrice" placeholder="T.ex. 24.50" min="0" step="0.01">
+            </div>
+            
+            <button id="addItemBtn" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Lägg till vara
+            </button>
+            
+            <h3 style="margin-top: 25px; margin-bottom: 10px;">Snabbval</h3>
+            <div class="quick-items" id="quickItems">
+                <!-- Quick items will be added by JavaScript -->
+            </div>
+        </section>
+        
+        <section class="items-list-section">
+            <h2>
+                <span><i class="fas fa-list"></i> Tillagda varor</span>
+                <span id="itemCount">0 varor</span>
+            </h2>
+            
+            <ul class="items-list" id="itemsList">
+                <li class="empty-list">Inga varor tillagda ännu. Lägg till dina första varor ovan.</li>
+            </ul>
+            
+            <div class="actions">
+                <button id="clearAllBtn" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> Rensa alla varor
+                </button>
+                <button id="exportBtn" class="btn btn-secondary">
+                    <i class="fas fa-file-export"></i> Exportera till CSV
+                </button>
+            </div>
+        </section>
+        
+        <section class="export-section">
+            <p><i class="fas fa-info-circle"></i> Appen sparar automatiskt din data i webbläsaren. All data försvinner om du rensar webbläsardata.</p>
+        </section>
+        
+        <footer>
+            <p>Budget Shopping Calculator &copy; 2023 | Utvecklad för enkel handlingsplanering</p>
+        </footer>
+        
+        <div id="alert" class="alert"></div>
+    </div>
+
+    <script>
+        // App state
+        let budget = 0;
+        let items = [];
+        
+        // DOM Elements
+        const budgetInput = document.getElementById('budget');
+        const remainingAmountEl = document.getElementById('remainingAmount');
+        const spentAmountEl = document.getElementById('spentAmount');
+        const itemNameInput = document.getElementById('itemName');
+        const itemPriceInput = document.getElementById('itemPrice');
+        const addItemBtn = document.getElementById('addItemBtn');
+        const itemsListEl = document.getElementById('itemsList');
+        const itemCountEl = document.getElementById('itemCount');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const quickItemsEl = document.getElementById('quickItems');
+        const alertEl = document.getElementById('alert');
+        
+        // Predefined quick items with prices (in SEK)
+        const quickItems = [
+            { name: "Morötter", price: 18.90 },
+            { name: "Potatis", price: 15.50 },
+            { name: "Ägg", price: 45.00 },
+            { name: "Kaffebröd", price: 28.00 },
+            { name: "Matbröd", price: 32.50 },
+            { name: "Wienerkorv", price: 38.75 },
+            { name: "Falukorv", price: 52.00 },
+            { name: "Mjölk", price: 16.90 },
+            { name: "Smör", price: 42.50 },
+            { name: "Ost", price: 89.90 },
+            { name: "Köttfärs", price: 65.00 },
+            { name: "Kyckling", price: 78.00 }
+        ];
+        
+        // Initialize the app
+        function init() {
+            loadFromStorage();
+            setupEventListeners();
+            renderQuickItems();
+            updateUI();
+        }
+        
+        // Load data from localStorage
+        function loadFromStorage() {
+            const savedBudget = localStorage.getItem('shoppingBudget');
+            const savedItems = localStorage.getItem('shoppingItems');
+            
+            if (savedBudget) {
+                budget = parseFloat(savedBudget);
+                budgetInput.value = budget;
+            }
+            
+            if (savedItems) {
+                items = JSON.parse(savedItems);
+            }
+        }
+        
+        // Save data to localStorage
+        function saveToStorage() {
+            localStorage.setItem('shoppingBudget', budget);
+            localStorage.setItem('shoppingItems', JSON.stringify(items));
+        }
+        
+        // Setup event listeners
+        function setupEventListeners() {
+            budgetInput.addEventListener('change', updateBudget);
+            addItemBtn.addEventListener('click', addItem);
+            clearAllBtn.addEventListener('click', clearAllItems);
+            exportBtn.addEventListener('click', exportToCSV);
+            
+            // Allow adding item with Enter key
+            itemNameInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') addItem();
+            });
+            
+            itemPriceInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') addItem();
+            });
+        }
+        
+        // Render quick items buttons
+        function renderQuickItems() {
+            quickItemsEl.innerHTML = '';
+            
+            quickItems.forEach(item => {
+                const quickItemEl = document.createElement('div');
+                quickItemEl.className = 'quick-item';
+                quickItemEl.innerHTML = `
+                    <div>${item.name}</div>
+                    <div class="quick-item-price">${item.price.toFixed(2)} kr</div>
+                `;
+                
+                quickItemEl.addEventListener('click', () => {
+                    itemNameInput.value = item.name;
+                    itemPriceInput.value = item.price;
+                    itemPriceInput.focus();
+                    showAlert(`${item.name} vald (${item.price.toFixed(2)} kr)`);
+                });
+                
+                quickItemsEl.appendChild(quickItemEl);
+            });
+        }
+        
+        // Update budget from input
+        function updateBudget() {
+            const newBudget = parseFloat(budgetInput.value) || 0;
+            
+            if (newBudget < 0) {
+                showAlert("Budget kan inte vara negativ", "error");
+                budgetInput.value = budget;
+                return;
+            }
+            
+            budget = newBudget;
+            saveToStorage();
+            updateUI();
+            showAlert(`Budget uppdaterad till ${budget.toFixed(2)} kr`);
+        }
+        
+        // Add item to list
+        function addItem() {
+            const name = itemNameInput.value.trim();
+            const price = parseFloat(itemPriceInput.value);
+            
+            // Validate input
+            if (!name) {
+                showAlert("Ange ett varunamn", "error");
+                itemNameInput.focus();
+                return;
+            }
+            
+            if (!price || price <= 0) {
+                showAlert("Ange ett giltigt pris", "error");
+                itemPriceInput.focus();
+                return;
+            }
+            
+            // Add item
+            const newItem = {
+                id: Date.now(),
+                name: name,
+                price: price
+            };
+            
+            items.push(newItem);
+            saveToStorage();
+            updateUI();
+            
+            // Clear input fields and focus on name
+            itemNameInput.value = '';
+            itemPriceInput.value = '';
+            itemNameInput.focus();
+            
+            showAlert(`"${name}" tillagd för ${price.toFixed(2)} kr`);
+        }
+        
+        // Remove item from list
+        function removeItem(id) {
+            const itemIndex = items.findIndex(item => item.id === id);
+            
+            if (itemIndex !== -1) {
+                const removedItem = items[itemIndex];
+                items.splice(itemIndex, 1);
+                saveToStorage();
+                updateUI();
+                showAlert(`"${removedItem.name}" borttagen`);
+            }
+        }
+        
+        // Clear all items
+        function clearAllItems() {
+            if (items.length === 0) return;
+            
+            if (confirm(`Är du säker på att du vill ta bort alla ${items.length} varor?`)) {
+                items = [];
+                saveToStorage();
+                updateUI();
+                showAlert("Alla varor borttagna");
+            }
+        }
+        
+        // Export to CSV
+        function exportToCSV() {
+            if (items.length === 0) {
+                showAlert("Inga varor att exportera", "error");
+                return;
+            }
+            
+            // Create CSV content
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Varunamn;Pris (kr)\n";
+            
+            items.forEach(item => {
+                csvContent += `${item.name};${item.price.toFixed(2)}\n`;
+            });
+            
+            // Add total row
+            const total = items.reduce((sum, item) => sum + item.price, 0);
+            csvContent += `\nTOTALT;${total.toFixed(2)}\n`;
+            csvContent += `BUDGET;${budget.toFixed(2)}\n`;
+            csvContent += `ÅTERSTÅENDE;${(budget - total).toFixed(2)}\n`;
+            
+            // Create download link
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "handlingslista.csv");
+            document.body.appendChild(link);
+            
+            // Trigger download
+            link.click();
+            document.body.removeChild(link);
+            
+            showAlert("Handlingslista exporterad till CSV");
+        }
+        
+        // Update UI
+        function updateUI() {
+            // Calculate totals
+            const totalSpent = items.reduce((sum, item) => sum + item.price, 0);
+            const remaining = budget - totalSpent;
+            
+            // Update budget display
+            remainingAmountEl.textContent = `${remaining.toFixed(2)} kr`;
+            spentAmountEl.textContent = `${totalSpent.toFixed(2)} kr`;
+            
+            // Highlight if over budget
+            if (remaining < 0) {
+                remainingAmountEl.classList.add('negative-budget');
+            } else {
+                remainingAmountEl.classList.remove('negative-budget');
+            }
+            
+            // Update item count
+            itemCountEl.textContent = `${items.length} ${items.length === 1 ? 'vara' : 'varor'}`;
+            
+            // Update items list
+            if (items.length === 0) {
+                itemsListEl.innerHTML = '<li class="empty-list">Inga varor tillagda ännu. Lägg till dina första varor ovan.</li>';
+            } else {
+                itemsListEl.innerHTML = '';
+                
+                items.forEach(item => {
+                    const itemEl = document.createElement('li');
+                    itemEl.className = 'item-row';
+                    itemEl.innerHTML = `
+                        <div class="item-info">
+                            <span class="item-name">${item.name}</span>
+                            <span class="item-price">${item.price.toFixed(2)} kr</span>
+                        </div>
+                        <button class="item-delete" data-id="${item.id}">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+                    
+                    // Add event listener to delete button
+                    const deleteBtn = itemEl.querySelector('.item-delete');
+                    deleteBtn.addEventListener('click', () => removeItem(item.id));
+                    
+                    itemsListEl.appendChild(itemEl);
+                });
+            }
+            
+            // Update budget input if needed
+            if (budgetInput.value !== budget.toString()) {
+                budgetInput.value = budget;
+            }
+        }
+        
+        // Show alert message
+        function showAlert(message, type = "success") {
+            alertEl.textContent = message;
+            alertEl.style.display = 'block';
+            alertEl.style.background = type === "error" ? "var(--danger)" : "var(--primary)";
+            
+            setTimeout(() => {
+                alertEl.style.display = 'none';
+            }, 3000);
+        }
+        
+        // Initialize app when page loads
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
