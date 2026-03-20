@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Måltids ekonomi</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+        }
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .form-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        input[type="text"], input[type="number"], input[type="date"] {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            flex: 1;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover { background-color: #2ecc71; }
+        .btn-danger { background-color: #e74c3c; }
+        .btn-danger:hover { background-color: #c0392b; }
+        .btn-warning { background-color: #f39c12; }
+        .btn-warning:hover { background-color: #d68910; }
+        
+        #status-display {
+            font-size: 1.1em;
+            font-weight: bold;
+            padding: 15px;
+            border-radius: 4px;
+            background-color: #ecf0f1;
+            margin-top: 10px;
+        }
+        
+        .food-item {
+            border-bottom: 1px solid #eee;
+            padding-bottom: 15px;
+            margin-bottom: 15px;
+        }
+        .food-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .food-header h3 { margin: 0; color: #34495e; }
+        .portions-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-left: 10px;
+        }
+        .portion-label {
+            background: #f9f9f9;
+            padding: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+        }
+        .portion-label input { margin-right: 10px; transform: scale(1.2); }
+    </style>
+</head>
+<body>
+
+    <h1>Måltids ekonomi</h1>
+
+    <div class="card">
+        <h3>Ekonomistatus</h3>
+        <div class="form-group">
+            <label style="flex:1; display:flex; align-items:center;">
+                Nästa lönedag:&nbsp; 
+                <input type="date" id="payday" onchange="updateUI()">
+            </label>
+        </div>
+        <div id="status-display">Fyll i nästa lönedag för att se prognos.</div>
+    </div>
+
+    <div class="card">
+        <h3>Lägg till matvara</h3>
+        <div class="form-group">
+            <input type="text" id="food-name" placeholder="T.ex. Falukorv">
+            <input type="number" id="food-portions" placeholder="Antal portioner" min="1">
+            <button onclick="addFood()">Lägg till</button>
+        </div>
+    </div>
+
+    <div class="card" id="food-list-container">
+        <h3>Mina Portioner</h3>
+        <div id="food-list">
+            </div>
+    </div>
+
+    <script>
+        // Vår huvudlista som sparar alla matvaror
+        let foods = [];
+
+        // Funktion för att lägga till en matvara
+        function addFood() {
+            const nameInput = document.getElementById('food-name');
+            const portionsInput = document.getElementById('food-portions');
+            
+            const name = nameInput.value.trim();
+            const portions = parseInt(portionsInput.value);
+
+            if (name === "" || isNaN(portions) || portions <= 0) {
+                alert("Vänligen ange ett giltigt namn och minst 1 portion.");
+                return;
+            }
+
+            // Skapa ett objekt för matvaran och lägg till i listan
+            const newFood = {
+                id: Date.now(), // Unikt ID baserat på tid
+                name: name,
+                initialPortions: portions,
+                portionsLeft: portions
+            };
+            
+            foods.push(newFood);
+
+            // Töm fälten för nästa inmatning
+            nameInput.value = '';
+            portionsInput.value = '';
+
+            updateUI();
+        }
+
+        // Funktion för att konsumera/bocka av en portion
+        function consumePortion(id) {
+            const food = foods.find(f => f.id === id);
+            if (food && food.portionsLeft > 0) {
+                food.portionsLeft--; // Minska med 1
+                updateUI();
+            }
+        }
+
+        // Funktion för att återställa antalet portioner till max
+        function resetFood(id) {
+            const food = foods.find(f => f.id === id);
+            if (food) {
+                food.portionsLeft = food.initialPortions;
+                updateUI();
+            }
+        }
+
+        // Funktion för att helt ta bort en matvara
+        function deleteFood(id) {
+            foods = foods.filter(f => f.id !== id);
+            updateUI();
+        }
+
+        // Funktion som räknar ut status och ritar ut allt på skärmen
+        function updateUI() {
+            renderList();
+            calculateStatus();
+        }
+
+        // Ritar ut html-listan med alla matvaror och portioner
+        function renderList() {
+            const listDiv = document.getElementById('food-list');
+            listDiv.innerHTML = ''; // Rensa gamla listan
+
+            if (foods.length === 0) {
+                listDiv.innerHTML = '<p style="color:#7f8c8d;">Inga matvaror tillagda än.</p>';
+                return;
+            }
+
+            foods.forEach(food => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'food-item';
+
+                // Skapa artikelrubriken med knappar
+                itemDiv.innerHTML = `
+                    <div class="food-header">
+                        <h3>${food.name} (${food.portionsLeft}/${food.initialPortions} kvar)</h3>
+                        <div>
+                            <button class="btn-warning" onclick="resetFood(${food.id})">Återställ</button>
+                            <button class="btn-danger" onclick="deleteFood(${food.id})">Radera</button>
+                        </div>
+                    </div>
+                `;
+
+                // Skapa de individuella portions-rutorna
+                const portionsDiv = document.createElement('div');
+                portionsDiv.className = 'portions-list';
+                
+                for (let i = 0; i < food.portionsLeft; i++) {
+                    const label = document.createElement('label');
+                    label.className = 'portion-label';
+                    
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    // När man klickar på rutan, körs consumePortion
+                    checkbox.onclick = () => consumePortion(food.id);
+                    
+                    label.appendChild(checkbox);
+                    label.appendChild(document.createTextNode(`1 portion ${food.name}`));
+                    portionsDiv.appendChild(label);
+                }
+
+                itemDiv.appendChild(portionsDiv);
+                listDiv.appendChild(itemDiv);
+            });
+        }
+
+        // Räknar ut diff mellan totala portioner och dagar till lön
+        function calculateStatus() {
+            const paydayInput = document.getElementById('payday').value;
+            const displayDiv = document.getElementById('status-display');
+            
+            // Summera alla portioner som är kvar
+            let totalPortionsLeft = foods.reduce((sum, food) => sum + food.portionsLeft, 0);
+
+            if (!paydayInput) {
+                displayDiv.innerHTML = `Totalt <strong>${totalPortionsLeft}</strong> portioner kvar. Fyll i lönedag för prognos.`;
+                return;
+            }
+
+            // Hantera datum och räkna ut dagar
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Nollställ klockslag för rättvis beräkning
+            
+            const paydayDate = new Date(paydayInput);
+            paydayDate.setHours(0, 0, 0, 0);
+
+            const msPerDay = 1000 * 60 * 60 * 24;
+            const diffTime = paydayDate - today;
+            const daysLeft = Math.ceil(diffTime / msPerDay);
+
+            if (daysLeft < 0) {
+                displayDiv.innerHTML = "Lönedagen har redan passerat. Välj ett framtida datum!";
+                displayDiv.style.backgroundColor = "#ffcccc";
+                return;
+            }
+
+            // Jämför matportioner mot dagar
+            const diff = totalPortionsLeft - daysLeft;
+            
+            let statusHtml = `Dagar till lön: <strong>${daysLeft}</strong><br>`;
+            statusHtml += `Totala portioner mat: <strong>${totalPortionsLeft}</strong><br><br>`;
+
+            if (diff > 0) {
+                statusHtml += `🎉 <strong>Överskott:</strong> Du har ${diff} portion(er) mer än dagar kvar!`;
+                displayDiv.style.backgroundColor = "#d5f5e3"; // Ljusgrön
+            } else if (diff < 0) {
+                statusHtml += `⚠️ <strong>Underskott:</strong> Du saknar ${Math.abs(diff)} portion(er) för att klara dig till lön!`;
+                displayDiv.style.backgroundColor = "#fadbd8"; // Ljusröd
+            } else {
+                statusHtml += `✅ <strong>Jämnt:</strong> Du har exakt en portion per dag till lönen kommer. Snyggt!`;
+                displayDiv.style.backgroundColor = "#d6eaf8"; // Ljusblå
+            }
+
+            displayDiv.innerHTML = statusHtml;
+        }
+
+        // Kör en inledande uppdatering när sidan laddas
+        updateUI();
+    </script>
+</body>
+</html>
