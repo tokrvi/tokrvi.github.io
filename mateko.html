@@ -24,6 +24,17 @@
         .portions-list { display: flex; flex-direction: column; gap: 8px; padding-left: 10px; }
         .portion-label { background: #f9f9f9; padding: 8px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; }
         .portion-label input { margin-right: 10px; transform: scale(1.2); }
+                /* --- NY KOD FÖR MOBILANPASSNING --- */
+        @media (max-width: 500px) {
+            .form-group {
+                flex-direction: column; /* Staplar elementen ovanpå varandra */
+            }
+            .form-group input, .form-group button {
+                width: 100%; /* Gör så att fält och knappar fyller hela bredden */
+                box-sizing: border-box; /* Ser till att marginaler inte gör dem för breda */
+            }
+        }
+
     </style>
 </head>
 <body>
