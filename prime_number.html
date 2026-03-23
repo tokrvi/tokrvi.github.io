@@ -118,7 +118,7 @@
                     let numGaps = currentLineGaps.length;
                     seqLengthForCSV = numGaps; // Spara längden för CSV-raden
                     
-                    let lineText = currentLineGaps.join(", ");
+                    let lineText = currentLineGaps.join(",");
                     screen.innerHTML += `<div>${lineText}${lineText ? ', ' : ''}<span class="gap-2">2</span> <span class="seq-count-tag">[${numGaps} gap]</span></div>`;
                     
                     currentLineGaps = [];
