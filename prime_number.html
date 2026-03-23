@@ -2,33 +2,20 @@
 <html lang="sv">
 <head>
     <meta charset="UTF-8">
-    <title>Primtalsanalys - CSV med Sekvensdata</title>
+    <title>Primtalsanalys - Stabil CSV-export</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: sans-serif; background: #1a1a1a; color: #eee; padding: 20px; }
         .controls { background: #2a2a2a; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-        
         #gap-scroll-screen { 
-            background: #000; 
-            color: #00ffcc; 
-            padding: 15px; 
-            border-radius: 8px; 
-            height: 250px; 
-            overflow-y: scroll; 
-            font-family: 'Courier New', monospace; 
-            margin-bottom: 20px;
-            border: 1px solid #444;
-            line-height: 1.6;
+            background: #000; color: #00ffcc; padding: 15px; border-radius: 8px; height: 250px; 
+            overflow-y: scroll; font-family: 'Courier New', monospace; margin-bottom: 20px;
+            border: 1px solid #444; line-height: 1.6;
         }
-
-        #chart-container { 
-            background: #2a2a2a; padding: 20px; border-radius: 8px; height: 350px; border: 1px solid #444; 
-        }
-
+        #chart-container { background: #2a2a2a; padding: 20px; border-radius: 8px; height: 350px; border: 1px solid #444; }
         .status-bar { margin-bottom: 10px; font-size: 0.9em; }
         .counter-highlight { color: yellow; font-weight: bold; }
         .seq-count-tag { color: yellow; font-weight: bold; margin-left: 10px; font-size: 0.85em; }
-        
         input { padding: 8px; border-radius: 4px; border: 1px solid #444; background: #333; color: white; width: 120px; }
         button { padding: 10px 20px; cursor: pointer; border: none; border-radius: 5px; color: white; font-weight: bold; }
         #startBtn { background: #007bff; }
@@ -38,7 +25,7 @@
 </head>
 <body>
 
-    <h1>Primtalsanalys & Utökad CSV-Data</h1>
+    <h1>Primtalsanalys - Stabil Version</h1>
     
     <div class="controls">
         <label>Starta från:</label>
@@ -48,25 +35,18 @@
     </div>
 
     <div class="status-bar">
-        Senaste primtal: <span id="currentP">-</span> | 
-        Totalt antal: <span id="countP">0</span> | 
-        Nuvarande sekvens: <span id="seqCounter" class="counter-highlight">0</span> gap
+        Senaste: <span id="currentP">-</span> | Totalt: <span id="countP">0</span> | 
+        Sekvens: <span id="seqCounter" class="counter-highlight">0</span> gap
     </div>
 
-    <h3>Gap-sekvens (Bryts vid gap 2)</h3>
-    <div id="gap-scroll-screen">
-        <div id="gap-lines"></div>
-    </div>
-
-    <div id="chart-container">
-        <canvas id="gapChart"></canvas>
-    </div>
+    <div id="gap-scroll-screen"><div id="gap-lines"></div></div>
+    <div id="chart-container"><canvas id="gapChart"></canvas></div>
 
     <script>
         let lastPrime = 2;
         let currentNum = 3;
         let gapFrequencies = {}; 
-        let exportData = []; // Lagrar {index, prime, gap, seqLength}
+        let exportData = []; 
         let running = false;
         let interval;
         let chart;
@@ -77,22 +57,8 @@
             const ctx = document.getElementById('gapChart').getContext('2d');
             chart = new Chart(ctx, {
                 type: 'bar',
-                data: {
-                    labels: [],
-                    datasets: [{
-                        label: 'Förekomst av differentialer (Gap)',
-                        data: [],
-                        backgroundColor: '#00ffcc'
-                    }]
-                },
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false,
-                    scales: { 
-                        y: { beginAtZero: true, grid: { color: '#444' } },
-                        x: { title: { display: true, text: 'Differential-värde', color: '#eee' } }
-                    }
-                }
+                data: { labels: [], datasets: [{ label: 'Förekomst av Gap', data: [], backgroundColor: '#00ffcc' }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true }, x: { title: { display: true, text: 'Gap' } } } }
             });
         };
 
@@ -100,8 +66,7 @@
             if (n < 2) return false;
             if (n === 2) return true;
             if (n % 2 === 0) return false;
-            for (let i = 3, s = Math.sqrt(n); i <= s; i += 2)
-                if (n % i === 0) return false;
+            for (let i = 3, s = Math.sqrt(n); i <= s; i += 2) if (n % i === 0) return false;
             return true;
         }
 
@@ -109,45 +74,28 @@
             if (isPrime(currentNum)) {
                 let gap = currentNum - lastPrime;
                 primeCount++;
-                
-                const screen = document.getElementById('gap-lines');
-                const counterDisplay = document.getElementById('seqCounter');
-                let seqLengthForCSV = "";
+                let seqLengthForCSV = (gap === 2) ? currentLineGaps.length : "";
 
                 if (gap === 2) {
-                    let numGaps = currentLineGaps.length;
-                    seqLengthForCSV = numGaps; // Spara längden för CSV-raden
-                    
                     let lineText = currentLineGaps.join(",");
-                    screen.innerHTML += `<div>${lineText}${lineText ? ', ' : ''}<span class="gap-2">2</span> <span class="seq-count-tag">[${numGaps} gap]</span></div>`;
-                    
+                    document.getElementById('gap-lines').innerHTML += `<div>${lineText}${lineText ? ', ' : ''}<span class="gap-2">2</span> <span class="seq-count-tag">[${currentLineGaps.length} gap]</span></div>`;
                     currentLineGaps = [];
-                    counterDisplay.innerText = "0";
-                    
+                    document.getElementById('seqCounter').innerText = "0";
                     const container = document.getElementById('gap-scroll-screen');
                     container.scrollTop = container.scrollHeight;
                 } else {
                     currentLineGaps.push(gap);
-                    counterDisplay.innerText = currentLineGaps.length;
-                    seqLengthForCSV = ""; // Lämna tomt om sekvensen inte är slut
+                    document.getElementById('seqCounter').innerText = currentLineGaps.length;
                 }
 
-                // Spara data till exportlistan inklusive sekvenslängden vid gap 2
-                exportData.push({
-                    index: primeCount, 
-                    prime: currentNum, 
-                    gap: gap, 
-                    seqLength: seqLengthForCSV
-                });
-
+                exportData.push({ id: primeCount, p: currentNum, g: gap, s: seqLengthForCSV });
                 gapFrequencies[gap] = (gapFrequencies[gap] || 0) + 1;
                 updateChart();
-
                 document.getElementById('currentP').innerText = currentNum;
                 document.getElementById('countP').innerText = primeCount;
                 lastPrime = currentNum;
             }
-            currentNum += (currentNum === 2) ? 1 : 2;
+            currentNum += 2;
         }
 
         function updateChart() {
@@ -159,51 +107,53 @@
 
         function toggleGenerator() {
             if (!running) {
-                let startVal = parseInt(document.getElementById('startFrom').value);
-                if (currentNum !== startVal) {
-                    currentNum = startVal;
+                let val = parseInt(document.getElementById('startFrom').value);
+                if (currentNum !== val) {
+                    currentNum = val % 2 === 0 ? val + 1 : val;
                     lastPrime = findPreviousPrime(currentNum);
+                    exportData = [];
                     document.getElementById('gap-lines').innerHTML = "";
-                    currentLineGaps = [];
-                    exportData = []; // Nollställ data vid ny startpunkt
-                    document.getElementById('seqCounter').innerText = "0";
                 }
                 running = true;
                 document.getElementById('startBtn').innerText = "Pausa";
-                document.getElementById('startBtn').style.background = "#dc3545";
                 interval = setInterval(generateNext, 5);
             } else {
                 running = false;
                 document.getElementById('startBtn').innerText = "Starta";
-                document.getElementById('startBtn').style.background = "#007bff";
                 clearInterval(interval);
             }
         }
 
         function findPreviousPrime(n) {
-            for (let i = n - 1; i >= 2; i--) {
-                if (isPrime(i)) return i;
-            }
+            for (let i = n - 1; i >= 2; i--) if (isPrime(i)) return i;
             return 2;
         }
 
+        // DENNA FUNKTION ÄR UPPDATERAD FÖR ATT VARA STABIL
         function exportToCSV() {
-            if (exportData.length === 0) return;
-            
-            // Ny header med SekvensLangd
-            let csvContent = "data:text/csv;charset=utf-8,Index,Primtal,Gap,SekvensLangd\n";
-            
-            exportData.forEach(row => { 
-                csvContent += `${row.index},${row.prime},${row.gap},${row.seqLength}\n`; 
+            if (exportData.length === 0) return alert("Ingen data!");
+
+            let csvRows = ["Index,Primtal,Gap,SekvensLangd"];
+            exportData.forEach(row => {
+                csvRows.push(`${row.id},${row.p},${row.g},${row.s}`);
             });
 
-            const encodedUri = encodeURI(csvContent);
+            // Skapa en Blob istället för en Data URI
+            const csvString = csvRows.join("\n");
+            const blob = new Blob(["\uFEFF" + csvString], { type: 'text/csv;charset=utf-8;' });
+            
             const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `primtal_analys_${currentNum}.csv`);
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute("href", url);
+            link.setAttribute("download", `primtal_data_${Date.now()}.csv`);
+            link.style.visibility = 'hidden';
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+            
+            // Frigör minne
+            setTimeout(() => URL.revokeObjectURL(url), 100);
         }
     </script>
 </body>
