@@ -2,7 +2,7 @@
 <html lang="sv">
 <head>
     <meta charset="UTF-8">
-    <title>Primtalsanalys - Gap-mönster</title>
+    <title>Primtalsanalys - CSV med Sekvensdata</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: sans-serif; background: #1a1a1a; color: #eee; padding: 20px; }
@@ -13,28 +13,32 @@
             color: #00ffcc; 
             padding: 15px; 
             border-radius: 8px; 
-            height: 800px; 
+            height: 250px; 
             overflow-y: scroll; 
             font-family: 'Courier New', monospace; 
             margin-bottom: 20px;
             border: 1px solid #444;
-            line-height: 1.4;
+            line-height: 1.6;
         }
 
         #chart-container { 
             background: #2a2a2a; padding: 20px; border-radius: 8px; height: 350px; border: 1px solid #444; 
         }
 
+        .status-bar { margin-bottom: 10px; font-size: 0.9em; }
+        .counter-highlight { color: yellow; font-weight: bold; }
+        .seq-count-tag { color: yellow; font-weight: bold; margin-left: 10px; font-size: 0.85em; }
+        
         input { padding: 8px; border-radius: 4px; border: 1px solid #444; background: #333; color: white; width: 120px; }
         button { padding: 10px 20px; cursor: pointer; border: none; border-radius: 5px; color: white; font-weight: bold; }
         #startBtn { background: #007bff; }
         #exportBtn { background: #28a745; }
-        .gap-2 { color: #ff3366; font-weight: bold; } /* Markera radbrytaren */
+        .gap-2 { color: #ff3366; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <h1>Primtalsanalys & Gap-sekvenser</h1>
+    <h1>Primtalsanalys & Utökad CSV-Data</h1>
     
     <div class="controls">
         <label>Starta från:</label>
@@ -43,13 +47,15 @@
         <button onclick="exportToCSV()" id="exportBtn">Exportera CSV</button>
     </div>
 
-    <div id="status">
-        Senaste primtal: <span id="currentP">-</span> | Antal: <span id="countP">0</span>
+    <div class="status-bar">
+        Senaste primtal: <span id="currentP">-</span> | 
+        Totalt antal: <span id="countP">0</span> | 
+        Nuvarande sekvens: <span id="seqCounter" class="counter-highlight">0</span> gap
     </div>
 
     <h3>Gap-sekvens (Bryts vid gap 2)</h3>
     <div id="gap-scroll-screen">
-        <div id="gap-lines"><em>Klicka på start för att generera mönster...</em></div>
+        <div id="gap-lines"></div>
     </div>
 
     <div id="chart-container">
@@ -60,7 +66,7 @@
         let lastPrime = 2;
         let currentNum = 3;
         let gapFrequencies = {}; 
-        let exportData = [];
+        let exportData = []; // Lagrar {index, prime, gap, seqLength}
         let running = false;
         let interval;
         let chart;
@@ -104,33 +110,38 @@
                 let gap = currentNum - lastPrime;
                 primeCount++;
                 
-                // Exportera data
-                exportData.push({index: primeCount, prime: currentNum, gap: gap});
-
-                // Uppdatera graf-statistik
-                gapFrequencies[gap] = (gapFrequencies[gap] || 0) + 1;
-                updateChart();
-
-                // Hantera rullskärm och radbrytning vid gap 2
                 const screen = document.getElementById('gap-lines');
-                if (primeCount === 1) screen.innerHTML = ""; // Rensa placeholder vid start
+                const counterDisplay = document.getElementById('seqCounter');
+                let seqLengthForCSV = "";
 
                 if (gap === 2) {
-                    // Om gapet är 2, avsluta nuvarande rad och påbörja ny
+                    let numGaps = currentLineGaps.length;
+                    seqLengthForCSV = numGaps; // Spara längden för CSV-raden
+                    
                     let lineText = currentLineGaps.join(", ");
-                    if (lineText) {
-                        screen.innerHTML += `<div>${lineText}, <span class="gap-2">2</span></div>`;
-                    } else {
-                        screen.innerHTML += `<div><span class="gap-2">2</span></div>`;
-                    }
+                    screen.innerHTML += `<div>${lineText}${lineText ? ', ' : ''}<span class="gap-2">2</span> <span class="seq-count-tag">[${numGaps} gap]</span></div>`;
+                    
                     currentLineGaps = [];
-                    // Autoscroll till botten
+                    counterDisplay.innerText = "0";
+                    
                     const container = document.getElementById('gap-scroll-screen');
                     container.scrollTop = container.scrollHeight;
                 } else {
-                    // Annars lägg till gapet i nuvarande sekvens
                     currentLineGaps.push(gap);
+                    counterDisplay.innerText = currentLineGaps.length;
+                    seqLengthForCSV = ""; // Lämna tomt om sekvensen inte är slut
                 }
+
+                // Spara data till exportlistan inklusive sekvenslängden vid gap 2
+                exportData.push({
+                    index: primeCount, 
+                    prime: currentNum, 
+                    gap: gap, 
+                    seqLength: seqLengthForCSV
+                });
+
+                gapFrequencies[gap] = (gapFrequencies[gap] || 0) + 1;
+                updateChart();
 
                 document.getElementById('currentP').innerText = currentNum;
                 document.getElementById('countP').innerText = primeCount;
@@ -148,17 +159,19 @@
 
         function toggleGenerator() {
             if (!running) {
-                // Om vi startar om, hämta värdet från boxen
                 let startVal = parseInt(document.getElementById('startFrom').value);
-                if (currentNum === 3 || currentNum !== startVal) {
+                if (currentNum !== startVal) {
                     currentNum = startVal;
-                    // Hitta närmaste tidigare primtal för att få ett korrekt första gap
                     lastPrime = findPreviousPrime(currentNum);
+                    document.getElementById('gap-lines').innerHTML = "";
+                    currentLineGaps = [];
+                    exportData = []; // Nollställ data vid ny startpunkt
+                    document.getElementById('seqCounter').innerText = "0";
                 }
                 running = true;
                 document.getElementById('startBtn').innerText = "Pausa";
                 document.getElementById('startBtn').style.background = "#dc3545";
-                interval = setInterval(generateNext, 20);
+                interval = setInterval(generateNext, 5);
             } else {
                 running = false;
                 document.getElementById('startBtn').innerText = "Starta";
@@ -176,12 +189,18 @@
 
         function exportToCSV() {
             if (exportData.length === 0) return;
-            let csvContent = "data:text/csv;charset=utf-8,Index,Primtal,Gap\n";
-            exportData.forEach(row => { csvContent += `${row.index},${row.prime},${row.gap}\n`; });
+            
+            // Ny header med SekvensLangd
+            let csvContent = "data:text/csv;charset=utf-8,Index,Primtal,Gap,SekvensLangd\n";
+            
+            exportData.forEach(row => { 
+                csvContent += `${row.index},${row.prime},${row.gap},${row.seqLength}\n`; 
+            });
+
             const encodedUri = encodeURI(csvContent);
             const link = document.createElement("a");
             link.setAttribute("href", encodedUri);
-            link.setAttribute("download", "primtalsdata.csv");
+            link.setAttribute("download", `primtal_analys_${currentNum}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
