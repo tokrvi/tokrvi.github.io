@@ -42,12 +42,33 @@
         /* Brödtext med bra radavstånd */
         p {
             font-size: 1.05rem;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
 
-        /* Gör sista stycket lite mer fristående */
-        p:last-child {
-            margin-bottom: 0;
+        /* Container för att centrera knappen i botten */
+        .button-wrapper {
+            display: flex;
+            justify-content: center;
+            margin-top: 25px;
+        }
+
+        /* Stilren och mobilvänlig knapp */
+        .btn-back {
+            display: inline-block;
+            text-decoration: none;
+            background-color: #0066cc;
+            color: #ffffff;
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: 500;
+            border-radius: 6px;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            box-shadow: 0 2px 4px rgba(0, 102, 204, 0.2);
+        }
+
+        /* Effekt när man håller muspekaren över eller klickar på mobilen */
+        .btn-back:hover, .btn-back:active {
+            background-color: #004ca3;
         }
     </style>
 </head>
@@ -57,6 +78,10 @@
         <h1>Tommis web app test</h1>
         <p>Det här är en test miljö för olika enkla mobil appar kodade med hjälp av AI efter anvisningar av Tommi Villenheimo.</p>
         <p>Det finns ingen djupare tanke bakom Github kontot, det var helt enkelt det enklaste sättet att kunna använda egna körbara web appar på iPhone och android mobila enheter där hög säkerhet förhindrar körning av icke säkerhets certifierad web kod direkt från enhetens fil utrymme.</p>
+        
+        <div class="button-wrapper">
+            <a href="index.html" class="btn-back">Tillbaka till start</a>
+        </div>
     </div>
 
 </body>
