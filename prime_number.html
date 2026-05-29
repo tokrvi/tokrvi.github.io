@@ -77,7 +77,7 @@
                 let seqLengthForCSV = (gap === 2) ? currentLineGaps.length : "";
 
                 if (gap === 2) {
-                    let lineText = currentLineGaps.join(", ");
+                    let lineText = currentLineGaps.join(",");
                     document.getElementById('gap-lines').innerHTML += `<div>${lineText}${lineText ? ', ' : ''}<span class="gap-2">2</span> <span class="seq-count-tag">[${currentLineGaps.length} gap]</span></div>`;
                     currentLineGaps = [];
                     document.getElementById('seqCounter').innerText = "0";
