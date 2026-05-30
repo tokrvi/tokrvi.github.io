@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Algoritmisk Kurvritare</title>
+    <title>Algoritmisk Kurvritare - Expanderad</title>
     <style>
-        /* Grundläggande stil för att fylla skärmen och få en snygg mörk bakgrund */
         body {
             margin: 0;
             overflow: hidden;
@@ -16,35 +15,96 @@
         canvas {
             display: block;
         }
-        /* UI-panel för att styra antalet kurvor */
+        /* UI-panel med mjuk övergång för animering vid minimering */
         #ui {
             position: absolute;
             top: 15px;
             left: 15px;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.85);
             padding: 15px;
             border-radius: 8px;
             border: 1px solid #333;
+            transition: all 0.3s ease-in-out;
+            max-width: 250px;
+        }
+        /* Stil när panelen är minimerad/krympt */
+        #ui.collapsed {
+            padding: 5px;
+            background: rgba(0, 0, 0, 0.6);
+        }
+        #uiContent {
+            transition: opacity 0.2s ease;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .button-group {
+            margin-bottom: 12px;
+        }
+        .label {
+            font-size: 12px;
+            color: #aaa;
+            margin-bottom: 4px;
         }
         button {
             background: #333;
             color: white;
             border: 1px solid #555;
-            padding: 8px 12px;
+            padding: 6px 10px;
             cursor: pointer;
             border-radius: 4px;
+            font-size: 13px;
         }
         button:hover { background: #444; }
-        #status { margin-top: 10px; font-size: 14px; }
+        
+        /* Specifik stil för dölj/visa-knappen */
+        #toggleUiBtn {
+            background: #442222;
+            border-color: #663333;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        #toggleUiBtn:hover { background: #553333; }
+        #ui.collapsed #toggleUiBtn {
+            background: #224422;
+            border-color: #336633;
+            margin-bottom: 0;
+            width: auto;
+        }
+        #ui.collapsed #toggleUiBtn:hover { background: #335533; }
+
+        #status, #angleStatus { 
+            margin-top: 6px; 
+            font-size: 13px; 
+        }
     </style>
 </head>
 <body>
 
     <div id="ui">
-        <button id="addBtn">Lägg till kurva</button>
-        <button id="removeBtn">Ta bort kurva</button>
-        <button id="clearBtn">Rensa skärm</button>
-        <div id="status">Aktiva kurvor: 1</div>
+        <button id="toggleUiBtn">Dölj panel</button>
+        
+        <div id="uiContent">
+            <div class="button-group">
+                <div class="label">Kurvor (Max 5)</div>
+                <button id="addBtn">Öka</button>
+                <button id="removeBtn">Minska</button>
+            </div>
+
+            <div class="button-group">
+                <div class="label">Vinkelintervall</div>
+                <button id="decAngleBtn">Minska</button>
+                <button id="incAngleBtn">Öka</button>
+            </div>
+
+            <div class="button-group">
+                <button id="clearBtn">Rensa skärm</button>
+            </div>
+
+            <hr style="border: 0; border-top: 1px solid #333; margin: 10px 0;">
+            <div id="status">Aktiva kurvor: 1</div>
+            <div id="angleStatus">Intervall: ±45°</div>
+        </div>
     </div>
 
     <canvas id="canvas"></canvas>
@@ -53,7 +113,6 @@
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
 
-        // Anpassa canvas till fönstrets storlek
         function resize() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
@@ -61,70 +120,57 @@
         window.addEventListener('resize', resize);
         resize();
 
-        // En palett med distinkta färger för upp till 5 kurvor
         const colors = ['#00ffff', '#ff00ff', '#ffff00', '#00ff00', '#ff8800'];
+        
+        // Definition av tillgängliga vinkelintervaller enligt önskemål
+        const angleIntervals = [10, 15, 30, 45, 60, 75, 90];
+        let angleIndex = 3; // Startar på index 3, vilket är 45 grader
 
         class Curve {
             constructor(color) {
                 this.x = Math.random() * canvas.width;
                 this.y = Math.random() * canvas.height;
-                // Starta i en slumpmässig vinkel (i radianer)
                 this.angle = Math.random() * Math.PI * 2;
                 this.color = color;
-                
-                // Kurvans unika skiftregister för binär data
                 this.register = [];
-                this.stepSize = 10; // Förflyttning i punkter
+                this.stepSize = 10;
             }
 
             updateAndDraw() {
-                // 1. Generera ett binärt slumptal (0 eller 1) och lägg i registret
                 const bit = Math.random() < 0.5 ? 0 : 1;
                 this.register.push(bit);
 
-                let angleChange = 0; // Förändring i grader
+                let angleChange = 0;
+                
+                // Hämtar det aktuella globala vinkelintervallet
+                const currentInterval = angleIntervals[angleIndex];
 
-                // 2. Avkoda skiftregistret (kräver minst 2 siffror för att jämföra)
                 if (this.register.length >= 2) {
                     const len = this.register.length;
                     const last = this.register[len - 1];
                     const prev = this.register[len - 2];
 
-                    /* * FRAMTIDA EXPANSION: 
-                     * Här kan du senare lägga till villkor för tre lika siffror.
-                     * Exempel: if (this.register.length >= 3 && last === 0 && prev === 0 && this.register[len-3] === 0) { ... }
-                     */
-
                     if (last === 0 && prev === 0) {
-                        // Två nollor: -45 grader och nolla registret
-                        angleChange = -45;
+                        angleChange = -currentInterval;
                         this.register = []; 
                     } 
                     else if (last === 1 && prev === 1) {
-                        // Två ettor: +45 grader och nolla registret
-                        angleChange = 45;
+                        angleChange = currentInterval;
                         this.register = [];
                     } 
                     else {
-                        // Växlande siffror (01 eller 10): 0 grader (rakt fram)
                         angleChange = 0;
-                        
-                        // Vi håller registret kort (skiftar ut gamla värden)
-                        // Om du vill bygga villkor för tex 4 i rad framöver, öka denna siffra.
                         if (this.register.length > 5) {
                             this.register.shift();
                         }
                     }
                 }
 
-                // Uppdatera kurvans vinkel (konvertera grader till radianer)
                 this.angle += angleChange * (Math.PI / 180);
 
-                // Beräkna nästa position
                 const nextX = this.x + Math.cos(this.angle) * this.stepSize;
                 const nextY = this.y + Math.sin(this.angle) * this.stepSize;
 
-                // 3. Rita förflyttningen
                 ctx.beginPath();
                 ctx.moveTo(this.x, this.y);
                 ctx.lineTo(nextX, nextY);
@@ -132,11 +178,9 @@
                 ctx.lineWidth = 2;
                 ctx.stroke();
 
-                // Uppdatera aktuella koordinater
                 this.x = nextX;
                 this.y = nextY;
 
-                // 4. Hantera fönsterramen (wrap-around effekt)
                 if (this.x < 0) this.x += canvas.width;
                 if (this.x > canvas.width) this.x -= canvas.width;
                 if (this.y < 0) this.y += canvas.height;
@@ -144,14 +188,15 @@
             }
         }
 
-        // Hantering av kurvor
         let curves = [];
-        curves.push(new Curve(colors[0])); // Starta med 1 kurva
+        curves.push(new Curve(colors[0]));
 
         function updateUI() {
             document.getElementById('status').innerText = `Aktiva kurvor: ${curves.length}`;
+            document.getElementById('angleStatus').innerText = `Intervall: ±${angleIntervals[angleIndex]}°`;
         }
 
+        // Hantering av antal kurvor
         document.getElementById('addBtn').addEventListener('click', () => {
             if (curves.length < 5) {
                 curves.push(new Curve(colors[curves.length]));
@@ -166,9 +211,24 @@
             }
         });
 
+        // Hantering av vinkelintervaller (Öka/Minska)
+        document.getElementById('incAngleBtn').addEventListener('click', () => {
+            if (angleIndex < angleIntervals.length - 1) {
+                angleIndex++;
+                updateUI();
+            }
+        });
+
+        document.getElementById('decAngleBtn').addEventListener('click', () => {
+            if (angleIndex > 0) {
+                angleIndex--;
+                updateUI();
+            }
+        });
+
+        // Rensa skärmen
         document.getElementById('clearBtn').addEventListener('click', () => {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            // Om man vill ge kurvorna nya slumpmässiga startpositioner vid rensning
             curves.forEach(c => {
                 c.x = Math.random() * canvas.width;
                 c.y = Math.random() * canvas.height;
@@ -176,16 +236,28 @@
             });
         });
 
+        // Logik för att dölja/krympa panelen
+        const toggleUiBtn = document.getElementById('toggleUiBtn');
+        const uiPanel = document.getElementById('ui');
+        const uiContent = document.getElementById('uiContent');
+
+        toggleUiBtn.addEventListener('click', () => {
+            uiPanel.classList.toggle('collapsed');
+            uiContent.classList.toggle('hidden');
+            
+            if (uiPanel.classList.contains('collapsed')) {
+                toggleUiBtn.innerText = "Visa panel";
+            } else {
+                toggleUiBtn.innerText = "Dölj panel";
+            }
+        });
+
         // Animationsloop
         function animate() {
-            // Vi ritar utan att sudda skärmen för att skapa mönstret
             curves.forEach(curve => curve.updateAndDraw());
-            
-            // requestAnimationFrame skapar en mjuk loop synkad med skärmens uppdateringsfrekvens
             requestAnimationFrame(animate);
         }
 
-        // Starta loopen
         animate();
     </script>
 </body>
