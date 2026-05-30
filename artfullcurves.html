@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algoritmisk Kurvritare</title>
+    <style>
+        /* Grundläggande stil för att fylla skärmen och få en snygg mörk bakgrund */
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #111;
+            color: #eee;
+            font-family: sans-serif;
+        }
+        canvas {
+            display: block;
+        }
+        /* UI-panel för att styra antalet kurvor */
+        #ui {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+        button {
+            background: #333;
+            color: white;
+            border: 1px solid #555;
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        button:hover { background: #444; }
+        #status { margin-top: 10px; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+    <div id="ui">
+        <button id="addBtn">Lägg till kurva</button>
+        <button id="removeBtn">Ta bort kurva</button>
+        <button id="clearBtn">Rensa skärm</button>
+        <div id="status">Aktiva kurvor: 1</div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Anpassa canvas till fönstrets storlek
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // En palett med distinkta färger för upp till 5 kurvor
+        const colors = ['#00ffff', '#ff00ff', '#ffff00', '#00ff00', '#ff8800'];
+
+        class Curve {
+            constructor(color) {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                // Starta i en slumpmässig vinkel (i radianer)
+                this.angle = Math.random() * Math.PI * 2;
+                this.color = color;
+                
+                // Kurvans unika skiftregister för binär data
+                this.register = [];
+                this.stepSize = 10; // Förflyttning i punkter
+            }
+
+            updateAndDraw() {
+                // 1. Generera ett binärt slumptal (0 eller 1) och lägg i registret
+                const bit = Math.random() < 0.5 ? 0 : 1;
+                this.register.push(bit);
+
+                let angleChange = 0; // Förändring i grader
+
+                // 2. Avkoda skiftregistret (kräver minst 2 siffror för att jämföra)
+                if (this.register.length >= 2) {
+                    const len = this.register.length;
+                    const last = this.register[len - 1];
+                    const prev = this.register[len - 2];
+
+                    /* * FRAMTIDA EXPANSION: 
+                     * Här kan du senare lägga till villkor för tre lika siffror.
+                     * Exempel: if (this.register.length >= 3 && last === 0 && prev === 0 && this.register[len-3] === 0) { ... }
+                     */
+
+                    if (last === 0 && prev === 0) {
+                        // Två nollor: -45 grader och nolla registret
+                        angleChange = -45;
+                        this.register = []; 
+                    } 
+                    else if (last === 1 && prev === 1) {
+                        // Två ettor: +45 grader och nolla registret
+                        angleChange = 45;
+                        this.register = [];
+                    } 
+                    else {
+                        // Växlande siffror (01 eller 10): 0 grader (rakt fram)
+                        angleChange = 0;
+                        
+                        // Vi håller registret kort (skiftar ut gamla värden)
+                        // Om du vill bygga villkor för tex 4 i rad framöver, öka denna siffra.
+                        if (this.register.length > 5) {
+                            this.register.shift();
+                        }
+                    }
+                }
+
+                // Uppdatera kurvans vinkel (konvertera grader till radianer)
+                this.angle += angleChange * (Math.PI / 180);
+
+                // Beräkna nästa position
+                const nextX = this.x + Math.cos(this.angle) * this.stepSize;
+                const nextY = this.y + Math.sin(this.angle) * this.stepSize;
+
+                // 3. Rita förflyttningen
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(nextX, nextY);
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Uppdatera aktuella koordinater
+                this.x = nextX;
+                this.y = nextY;
+
+                // 4. Hantera fönsterramen (wrap-around effekt)
+                if (this.x < 0) this.x += canvas.width;
+                if (this.x > canvas.width) this.x -= canvas.width;
+                if (this.y < 0) this.y += canvas.height;
+                if (this.y > canvas.height) this.y -= canvas.height;
+            }
+        }
+
+        // Hantering av kurvor
+        let curves = [];
+        curves.push(new Curve(colors[0])); // Starta med 1 kurva
+
+        function updateUI() {
+            document.getElementById('status').innerText = `Aktiva kurvor: ${curves.length}`;
+        }
+
+        document.getElementById('addBtn').addEventListener('click', () => {
+            if (curves.length < 5) {
+                curves.push(new Curve(colors[curves.length]));
+                updateUI();
+            }
+        });
+
+        document.getElementById('removeBtn').addEventListener('click', () => {
+            if (curves.length > 1) {
+                curves.pop();
+                updateUI();
+            }
+        });
+
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Om man vill ge kurvorna nya slumpmässiga startpositioner vid rensning
+            curves.forEach(c => {
+                c.x = Math.random() * canvas.width;
+                c.y = Math.random() * canvas.height;
+                c.register = [];
+            });
+        });
+
+        // Animationsloop
+        function animate() {
+            // Vi ritar utan att sudda skärmen för att skapa mönstret
+            curves.forEach(curve => curve.updateAndDraw());
+            
+            // requestAnimationFrame skapar en mjuk loop synkad med skärmens uppdateringsfrekvens
+            requestAnimationFrame(animate);
+        }
+
+        // Starta loopen
+        animate();
+    </script>
+</body>
+</html>
