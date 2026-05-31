@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algoritmisk Kurvritare - Komplett</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #111;
+            color: #eee;
+            font-family: sans-serif;
+        }
+        canvas {
+            display: block;
+        }
+        /* UI-panel med mjuk övergång för animering vid minimering */
+        #ui {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            transition: all 0.3s ease-in-out;
+            max-width: 250px;
+        }
+        #ui.collapsed {
+            padding: 5px;
+            background: rgba(0, 0, 0, 0.6);
+        }
+        #uiContent {
+            transition: opacity 0.2s ease;
+        }
+        .hidden {
+            display: none !important;
+        }
+        .button-group {
+            margin-bottom: 12px;
+        }
+        .label {
+            font-size: 12px;
+            color: #aaa;
+            margin-bottom: 4px;
+        }
+        button {
+            background: #333;
+            color: white;
+            border: 1px solid #555;
+            padding: 6px 10px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        button:hover { background: #444; }
+        
+        #toggleUiBtn {
+            background: #442222;
+            border-color: #663333;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        #toggleUiBtn:hover { background: #553333; }
+        #ui.collapsed #toggleUiBtn {
+            background: #224422;
+            border-color: #336633;
+            margin-bottom: 0;
+            width: auto;
+        }
+        #ui.collapsed #toggleUiBtn:hover { background: #335533; }
+
+        .status-text { 
+            margin-top: 6px; 
+            font-size: 13px; 
+        }
+    </style>
+</head>
+<body>
+
+    <div id="ui">
+        <button id="toggleUiBtn">Dölj panel</button>
+        
+        <div id="uiContent">
+            <div class="button-group">
+                <div class="label">Kurvor (Max 5)</div>
+                <button id="addBtn">Öka</button>
+                <button id="removeBtn">Minska</button>
+            </div>
+
+            <div class="button-group">
+                <div class="label">Vinkelintervall</div>
+                <button id="decAngleBtn">Minska</button>
+                <button id="incAngleBtn">Öka</button>
+            </div>
+
+            <div class="button-group">
+                <div class="label">Penntjocklek (1-10)</div>
+                <button id="decSizeBtn">Minska</button>
+                <button id="incSizeBtn">Öka</button>
+            </div>
+
+            <div class="button-group">
+                <button id="clearBtn">Rensa skärm</button>
+            </div>
+
+            <hr style="border: 0; border-top: 1px solid #333; margin: 10px 0;">
+            <div id="status" class="status-text">Aktiva kurvor: 1</div>
+            <div id="angleStatus" class="status-text">Intervall: ±45°</div>
+            <div id="sizeStatus" class="status-text">Penntjocklek: 2</div>
+        </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        const colors = ['#00ffff', '#ff00ff', '#ffff00', '#00ff00', '#ff8800'];
+        
+        // Inställningar som kan justeras från UI
+        const angleIntervals = [10, 15, 30, 45, 60, 75, 90];
+        let angleIndex = 3; // 45 grader
+        let penSize = 2;    // Starttjocklek på pennan
+
+        class Curve {
+            constructor(color) {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.angle = Math.random() * Math.PI * 2;
+                this.color = color;
+                this.register = [];
+                this.stepSize = 10;
+            }
+
+            updateAndDraw() {
+                const bit = Math.random() < 0.5 ? 0 : 1;
+                this.register.push(bit);
+
+                let angleChange = 0;
+                const currentInterval = angleIntervals[angleIndex];
+
+                if (this.register.length >= 2) {
+                    const len = this.register.length;
+                    const last = this.register[len - 1];
+                    const prev = this.register[len - 2];
+
+                    if (last === 0 && prev === 0) {
+                        angleChange = -currentInterval;
+                        this.register = []; 
+                    } 
+                    else if (last === 1 && prev === 1) {
+                        angleChange = currentInterval;
+                        this.register = [];
+                    } 
+                    else {
+                        angleChange = 0;
+                        if (this.register.length > 5) {
+                            this.register.shift();
+                        }
+                    }
+                }
+
+                this.angle += angleChange * (Math.PI / 180);
+
+                const nextX = this.x + Math.cos(this.angle) * this.stepSize;
+                const nextY = this.y + Math.sin(this.angle) * this.stepSize;
+
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(nextX, nextY);
+                ctx.strokeStyle = this.color;
+                
+                // Använder den globala variabeln för penntjocklek
+                ctx.lineWidth = penSize;
+                
+                ctx.stroke();
+
+                this.x = nextX;
+                this.y = nextY;
+
+                if (this.x < 0) this.x += canvas.width;
+                if (this.x > canvas.width) this.x -= canvas.width;
+                if (this.y < 0) this.y += canvas.height;
+                if (this.y > canvas.height) this.y -= canvas.height;
+            }
+        }
+
+        let curves = [];
+        curves.push(new Curve(colors[0]));
+
+        function updateUI() {
+            document.getElementById('status').innerText = `Aktiva kurvor: ${curves.length}`;
+            document.getElementById('angleStatus').innerText = `Intervall: ±${angleIntervals[angleIndex]}°`;
+            document.getElementById('sizeStatus').innerText = `Penntjocklek: ${penSize}`;
+        }
+
+        // Hantering av antal kurvor
+        document.getElementById('addBtn').addEventListener('click', () => {
+            if (curves.length < 5) {
+                curves.push(new Curve(colors[curves.length]));
+                updateUI();
+            }
+        });
+
+        document.getElementById('removeBtn').addEventListener('click', () => {
+            if (curves.length > 1) {
+                curves.pop();
+                updateUI();
+            }
+        });
+
+        // Hantering av vinkelintervaller
+        document.getElementById('incAngleBtn').addEventListener('click', () => {
+            if (angleIndex < angleIntervals.length - 1) {
+                angleIndex++;
+                updateUI();
+            }
+        });
+
+        document.getElementById('decAngleBtn').addEventListener('click', () => {
+            if (angleIndex > 0) {
+                angleIndex--;
+                updateUI();
+            }
+        });
+
+        // Hantering av penntjocklek
+        document.getElementById('incSizeBtn').addEventListener('click', () => {
+            if (penSize < 10) {
+                penSize++;
+                updateUI();
+            }
+        });
+
+        document.getElementById('decSizeBtn').addEventListener('click', () => {
+            if (penSize > 1) {
+                penSize--;
+                updateUI();
+            }
+        });
+
+        // Rensa skärmen
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            curves.forEach(c => {
+                c.x = Math.random() * canvas.width;
+                c.y = Math.random() * canvas.height;
+                c.register = [];
+            });
+        });
+
+        // Logik för att dölja/krympa panelen
+        const toggleUiBtn = document.getElementById('toggleUiBtn');
+        const uiPanel = document.getElementById('ui');
+        const uiContent = document.getElementById('uiContent');
+
+        toggleUiBtn.addEventListener('click', () => {
+            uiPanel.classList.toggle('collapsed');
+            uiContent.classList.toggle('hidden');
+            
+            if (uiPanel.classList.contains('collapsed')) {
+                toggleUiBtn.innerText = "Visa panel";
+            } else {
+                toggleUiBtn.innerText = "Dölj panel";
+            }
+        });
+
+        // Animationsloop
+        function animate() {
+            curves.forEach(curve => curve.updateAndDraw());
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
