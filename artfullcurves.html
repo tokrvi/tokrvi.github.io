@@ -86,7 +86,7 @@
         
         <div id="uiContent">
             <div class="button-group">
-                <div class="label">Kurvor (Max 5)</div>
+                <div class="label">Kurvor (Max 8)</div>
                 <button id="addBtn">Öka</button>
                 <button id="removeBtn">Minska</button>
             </div>
@@ -120,7 +120,7 @@
         window.addEventListener('resize', resize);
         resize();
 
-        const colors = ['#00ffff', '#ff00ff', '#ffff00', '#00ff00', '#ff8800'];
+        const colors = ['#ff0000', '#00ff00', '#0000ff', '#00ffff', '#ff00ff', '#ffff00', '#00ff00', '#ff8800'];
         
         // Definition av tillgängliga vinkelintervaller enligt önskemål
         const angleIntervals = [10, 15, 30, 45, 60, 75, 90];
@@ -160,7 +160,7 @@
                     } 
                     else {
                         angleChange = 0;
-                        if (this.register.length > 5) {
+                        if (this.register.length > 8) {
                             this.register.shift();
                         }
                     }
@@ -198,7 +198,7 @@
 
         // Hantering av antal kurvor
         document.getElementById('addBtn').addEventListener('click', () => {
-            if (curves.length < 5) {
+            if (curves.length < 8) {
                 curves.push(new Curve(colors[curves.length]));
                 updateUI();
             }
