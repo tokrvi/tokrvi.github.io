@@ -84,7 +84,7 @@
         
         <div id="uiContent">
             <div class="button-group">
-                <div class="label">Kurvor (Max 5)</div>
+                <div class="label">Kurvor (Max 8)</div>
                 <button id="addBtn">Öka</button>
                 <button id="removeBtn">Minska</button>
             </div>
@@ -125,7 +125,7 @@
         window.addEventListener('resize', resize);
         resize();
 
-        const colors = ['#00ffff', '#ff00ff', '#ffff00', '#00ff00', '#ff8800'];
+        const colors = ['#ff0000', '#00ff00', '#0000ff', '#00ffff', '#ff00ff', '#ffff00', '#00ff00', '#ff8800'];
         
         // Inställningar som kan justeras från UI
         const angleIntervals = [10, 15, 30, 45, 60, 75, 90];
@@ -269,7 +269,7 @@
             uiContent.classList.toggle('hidden');
             
             if (uiPanel.classList.contains('collapsed')) {
-                toggleUiBtn.innerText = "Visa panel";
+                toggleUiBtn.innerText = "";
             } else {
                 toggleUiBtn.innerText = "Dölj panel";
             }
