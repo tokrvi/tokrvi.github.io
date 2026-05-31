@@ -164,7 +164,7 @@
                     } 
                     else {
                         angleChange = 0;
-                        if (this.register.length > 5) {
+                        if (this.register.length > 8) {
                             this.register.shift();
                         }
                     }
@@ -206,7 +206,7 @@
 
         // Hantering av antal kurvor
         document.getElementById('addBtn').addEventListener('click', () => {
-            if (curves.length < 5) {
+            if (curves.length < 8) {
                 curves.push(new Curve(colors[curves.length]));
                 updateUI();
             }
