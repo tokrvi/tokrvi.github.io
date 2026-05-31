@@ -96,7 +96,7 @@
             </div>
 
             <div class="button-group">
-                <div class="label">Penntjocklek (1-10)</div>
+                <div class="label">Penntjocklek (1-50)</div>
                 <button id="decSizeBtn">Minska</button>
                 <button id="incSizeBtn">Öka</button>
             </div>
@@ -125,7 +125,7 @@
         window.addEventListener('resize', resize);
         resize();
 
-        const colors = ['#ff0000', '#00ff00', '#0000ff', '#00ffff', '#ff00ff', '#ffff00', '#00ff00', '#ff8800'];
+        const colors = ['#ffffff', '#dddddd', '#bbbbbb', '#888888', '#666666', '#444444', '#222222', '#000000'];
         
         // Inställningar som kan justeras från UI
         const angleIntervals = [10, 15, 30, 45, 60, 75, 90];
@@ -236,7 +236,7 @@
 
         // Hantering av penntjocklek
         document.getElementById('incSizeBtn').addEventListener('click', () => {
-            if (penSize < 10) {
+            if (penSize < 50) {
                 penSize++;
                 updateUI();
             }
