@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Algoritmisk Kurvritare - Expanderad</title>
+    <title>Algoritmisk Kurvritare - Kontrollpanel</title>
     <style>
         body {
             margin: 0;
@@ -15,7 +15,8 @@
         canvas {
             display: block;
         }
-        /* UI-panel med mjuk övergång för animering vid minimering */
+        
+        /* UI-panel med mjuk övergång */
         #ui {
             position: absolute;
             top: 15px;
@@ -25,9 +26,8 @@
             border-radius: 8px;
             border: 1px solid #333;
             transition: all 0.3s ease-in-out;
-            max-width: 250px;
+            max-width: 300px;
         }
-        /* Stil när panelen är minimerad/krympt */
         #ui.collapsed {
             padding: 5px;
             background: rgba(0, 0, 0, 0.6);
@@ -38,44 +38,82 @@
         .hidden {
             display: none !important;
         }
-        .button-group {
-            margin-bottom: 12px;
+        
+        /* Knapp- och radiostilar */
+        .radio-group {
+            margin-bottom: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border-radius: 6px;
         }
-        .label {
-            font-size: 12px;
-            color: #aaa;
-            margin-bottom: 4px;
+        .radio-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .radio-group label:last-child {
+            margin-bottom: 0;
+        }
+        
+        .main-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
         }
         button {
             background: #333;
             color: white;
             border: 1px solid #555;
-            padding: 6px 10px;
+            padding: 8px 12px;
             cursor: pointer;
             border-radius: 4px;
-            font-size: 13px;
+            font-size: 14px;
+            flex-grow: 1;
+            font-weight: bold;
         }
         button:hover { background: #444; }
         
-        /* Specifik stil för dölj/visa-knappen */
+        #clearBtn {
+            width: 100%;
+            background: #552222;
+            border-color: #773333;
+            font-weight: normal;
+        }
+        #clearBtn:hover { background: #663333; }
+        
         #toggleUiBtn {
-            background: #442222;
-            border-color: #663333;
+            background: #222;
+            border-color: #444;
             width: 100%;
             margin-bottom: 10px;
+            font-weight: normal;
         }
-        #toggleUiBtn:hover { background: #553333; }
+        #toggleUiBtn:hover { background: #333; }
         #ui.collapsed #toggleUiBtn {
-            background: #224422;
-            border-color: #336633;
             margin-bottom: 0;
             width: auto;
         }
-        #ui.collapsed #toggleUiBtn:hover { background: #335533; }
 
-        #status, #angleStatus { 
-            margin-top: 6px; 
-            font-size: 13px; 
+        /* Status text */
+        .status-box {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 15px;
+            border: 1px solid #222;
+        }
+        .status-text { 
+            margin-bottom: 5px; 
+            font-size: 13px;
+            color: #ccc;
+        }
+        .status-text:last-child {
+            margin-bottom: 0;
+        }
+        .val-highlight {
+            color: #fff;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -85,25 +123,29 @@
         <button id="toggleUiBtn">Dölj panel</button>
         
         <div id="uiContent">
-            <div class="button-group">
-                <div class="label">Kurvor (Max 8)</div>
-                <button id="addBtn">Öka</button>
-                <button id="removeBtn">Minska</button>
+            
+            <div class="radio-group">
+                <label><input type="radio" name="controlMode" value="curves" checked> Antal kurvor (1-5)</label>
+                <label><input type="radio" name="controlMode" value="angle"> Vinkelintervall (10°-90°)</label>
+                <label><input type="radio" name="controlMode" value="size"> Linjebredd (1-10)</label>
+                <label><input type="radio" name="controlMode" value="delay"> Fördröjning i ms (bromsa)</label>
+                <label><input type="radio" name="controlMode" value="steps"> Segment per animering</label>
             </div>
 
-            <div class="button-group">
-                <div class="label">Vinkelintervall</div>
-                <button id="decAngleBtn">Minska</button>
-                <button id="incAngleBtn">Öka</button>
+            <div class="main-controls">
+                <button id="decBtn">➖ Minska</button>
+                <button id="incBtn">➕ Öka</button>
             </div>
 
-            <div class="button-group">
-                <button id="clearBtn">Rensa skärm</button>
-            </div>
+            <button id="clearBtn">Rensa skärm</button>
 
-            <hr style="border: 0; border-top: 1px solid #333; margin: 10px 0;">
-            <div id="status">Aktiva kurvor: 1</div>
-            <div id="angleStatus">Intervall: ±45°</div>
+            <div class="status-box">
+                <div class="status-text">Kurvor: <span id="statusCurves" class="val-highlight">1</span></div>
+                <div class="status-text">Vinkel: <span id="statusAngle" class="val-highlight">±45°</span></div>
+                <div class="status-text">Linjebredd: <span id="statusSize" class="val-highlight">2</span></div>
+                <div class="status-text">Fördröjning: <span id="statusDelay" class="val-highlight">1 ms</span></div>
+                <div class="status-text">Linjelängd: <span id="statusSteps" class="val-highlight">1 segment/frame</span></div>
+            </div>
         </div>
     </div>
 
@@ -120,11 +162,17 @@
         window.addEventListener('resize', resize);
         resize();
 
-        const colors = ['#ff0000', '#00ff00', '#0000ff', '#00ffff', '#ff00ff', '#ffff00', '#00ff00', '#ff8800'];
+        const colors = ['#00ffff', '#ff00ff', '#ffff00', '#00ff00', '#ff8800'];
         
-        // Definition av tillgängliga vinkelintervaller enligt önskemål
+        // --- Parametrar ---
         const angleIntervals = [10, 15, 30, 45, 60, 75, 90];
-        let angleIndex = 3; // Startar på index 3, vilket är 45 grader
+        let angleIndex = 3; // Startar på 45 grader
+        let penSize = 2;
+        
+        // De stora intervallerna du föreslog, används för både fördröjning och antal segment
+        const customIntervals = [1, 25, 100, 250, 1000, 2500, 10000];
+        let delayIndex = 0; // Index 0 = 1 ms (Maxhastighet)
+        let stepsIndex = 0; // Index 0 = 1 segment per frame (Mjuk uppritning)
 
         class Curve {
             constructor(color) {
@@ -133,7 +181,7 @@
                 this.angle = Math.random() * Math.PI * 2;
                 this.color = color;
                 this.register = [];
-                this.stepSize = 5;
+                this.stepSize = 10;
             }
 
             updateAndDraw() {
@@ -141,8 +189,6 @@
                 this.register.push(bit);
 
                 let angleChange = 0;
-                
-                // Hämtar det aktuella globala vinkelintervallet
                 const currentInterval = angleIntervals[angleIndex];
 
                 if (this.register.length >= 2) {
@@ -160,7 +206,7 @@
                     } 
                     else {
                         angleChange = 0;
-                        if (this.register.length > 8) {
+                        if (this.register.length > 5) {
                             this.register.shift();
                         }
                     }
@@ -175,12 +221,13 @@
                 ctx.moveTo(this.x, this.y);
                 ctx.lineTo(nextX, nextY);
                 ctx.strokeStyle = this.color;
-                ctx.lineWidth = 2;
+                ctx.lineWidth = penSize;
                 ctx.stroke();
 
                 this.x = nextX;
                 this.y = nextY;
 
+                // Hantera fönsterkanten
                 if (this.x < 0) this.x += canvas.width;
                 if (this.x > canvas.width) this.x -= canvas.width;
                 if (this.y < 0) this.y += canvas.height;
@@ -192,38 +239,40 @@
         curves.push(new Curve(colors[0]));
 
         function updateUI() {
-            document.getElementById('status').innerText = `Aktiva kurvor: ${curves.length}`;
-            document.getElementById('angleStatus').innerText = `Intervall: ±${angleIntervals[angleIndex]}°`;
+            document.getElementById('statusCurves').innerText = curves.length;
+            document.getElementById('statusAngle').innerText = `±${angleIntervals[angleIndex]}°`;
+            document.getElementById('statusSize').innerText = penSize;
+            
+            const delayVal = customIntervals[delayIndex];
+            document.getElementById('statusDelay').innerText = delayVal === 1 ? "1 ms (Max)" : `${delayVal} ms`;
+            
+            document.getElementById('statusSteps').innerText = `${customIntervals[stepsIndex]}`;
         }
 
-        // Hantering av antal kurvor
-        document.getElementById('addBtn').addEventListener('click', () => {
-            if (curves.length < 8) {
-                curves.push(new Curve(colors[curves.length]));
-                updateUI();
-            }
+        // Öka-knappen
+        document.getElementById('incBtn').addEventListener('click', () => {
+            const mode = document.querySelector('input[name="controlMode"]:checked').value;
+            
+            if (mode === 'curves' && curves.length < 5) curves.push(new Curve(colors[curves.length]));
+            else if (mode === 'angle' && angleIndex < angleIntervals.length - 1) angleIndex++;
+            else if (mode === 'size' && penSize < 10) penSize++;
+            else if (mode === 'delay' && delayIndex < customIntervals.length - 1) delayIndex++;
+            else if (mode === 'steps' && stepsIndex < customIntervals.length - 1) stepsIndex++;
+            
+            updateUI();
         });
 
-        document.getElementById('removeBtn').addEventListener('click', () => {
-            if (curves.length > 1) {
-                curves.pop();
-                updateUI();
-            }
-        });
-
-        // Hantering av vinkelintervaller (Öka/Minska)
-        document.getElementById('incAngleBtn').addEventListener('click', () => {
-            if (angleIndex < angleIntervals.length - 1) {
-                angleIndex++;
-                updateUI();
-            }
-        });
-
-        document.getElementById('decAngleBtn').addEventListener('click', () => {
-            if (angleIndex > 0) {
-                angleIndex--;
-                updateUI();
-            }
+        // Minska-knappen
+        document.getElementById('decBtn').addEventListener('click', () => {
+            const mode = document.querySelector('input[name="controlMode"]:checked').value;
+            
+            if (mode === 'curves' && curves.length > 1) curves.pop();
+            else if (mode === 'angle' && angleIndex > 0) angleIndex--;
+            else if (mode === 'size' && penSize > 1) penSize--;
+            else if (mode === 'delay' && delayIndex > 0) delayIndex--;
+            else if (mode === 'steps' && stepsIndex > 0) stepsIndex--;
+            
+            updateUI();
         });
 
         // Rensa skärmen
@@ -236,7 +285,7 @@
             });
         });
 
-        // Logik för att dölja/krympa panelen
+        // Dölj/Visa panel
         const toggleUiBtn = document.getElementById('toggleUiBtn');
         const uiPanel = document.getElementById('ui');
         const uiContent = document.getElementById('uiContent');
@@ -244,22 +293,34 @@
         toggleUiBtn.addEventListener('click', () => {
             uiPanel.classList.toggle('collapsed');
             uiContent.classList.toggle('hidden');
-            
-            if (uiPanel.classList.contains('collapsed')) {
-                toggleUiBtn.innerText = "";
-            } else {
-                toggleUiBtn.innerText = "Dölj panel";
-            }
+            toggleUiBtn.innerText = uiPanel.classList.contains('collapsed') ? "Visa panel" : "Dölj panel";
         });
 
-        // Animationsloop
-        function animate() {
-            curves.forEach(curve => curve.updateAndDraw());
+        // Tidsstyrd animationsloop
+        let lastTime = performance.now();
+
+        function animate(currentTime) {
             requestAnimationFrame(animate);
+            
+            const currentDelay = customIntervals[delayIndex];
+
+            // Om delay är 1 struntar vi i tidsspärren och ritar så snabbt skärmen tillåter
+            // Annars väntar vi tills 'currentDelay' millisekunder har passerat.
+            if (currentDelay === 1 || (currentTime - lastTime >= currentDelay)) {
+                
+                const currentSteps = customIntervals[stepsIndex];
+                
+                // Ritar valt antal linjesegment
+                for (let i = 0; i < currentSteps; i++) {
+                    curves.forEach(curve => curve.updateAndDraw());
+                }
+                
+                lastTime = currentTime;
+            }
         }
 
-        animate();
+        // Starta loopen
+        requestAnimationFrame(animate);
     </script>
 </body>
 </html>
-=
