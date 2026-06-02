@@ -100,7 +100,7 @@
     const countEl = document.getElementById('count');
     const accuracyEl = document.getElementById('accuracy');
 
-    // Initiera Chart.js
+    // Initiera Chart.js med dämpade hover- och ringinställningar
     const ctx = document.getElementById('jitterChart').getContext('2d');
     const jitterChart = new Chart(ctx, {
         type: 'scatter',
@@ -109,13 +109,18 @@
                 label: 'GPS Diff-avvikelse',
                 data: [],
                 pointBackgroundColor: [], // Dynamisk färg per punkt
-                pointRadius: 6,
-                pointHoverRadius: 8
+                pointBorderColor: 'transparent',
+                pointBorderWidth: 0,
+                pointRadius: 5,
+                pointHoverBackgroundColor: null,
+                pointHoverBorderColor: 'transparent',
+                pointHoverRadius: 5
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: false,
             scales: {
                 x: {
                     title: { display: true, text: 'Diff Longitud', color: '#aaa' },
@@ -129,25 +134,23 @@
                 }
             },
             plugins: {
-                legend: { display: false }
+                legend: { display: false },
+                tooltip: { enabled: false }
             }
         }
     });
 
     // Funktion för att generera färg baserat på ålder (Index i listan)
-    // Blå (äldst, index 0) -> Lila/Rosa -> Röd (nyast, sista index)
-    // Använder fullt RGB-djup för maximal kontrast mot svart bakgrund
     function updatePointColors() {
         const totalPoints = logData.length;
         const colors = logData.map((_, index) => {
             if (totalPoints <= 1) return 'rgb(255, 0, 0)';
             
-            // Beräkna ett förhållande mellan 0.0 (äldst) och 1.0 (nyast)
             const ratio = index / (totalPoints - 1);
             
             // Interpolera mellan ren Blå (0, 0, 255) och ren Röd (255, 0, 0)
             const r = Math.round(ratio * 255);
-            const g = 0; // Håller grön på 0 för skarp kontrast
+            const g = 0; 
             const b = Math.round((1 - ratio) * 255);
             
             return `rgb(${r}, ${g}, ${b})`;
@@ -162,30 +165,24 @@
         const currentLon = position.coords.longitude;
         accuracyEl.textContent = position.coords.accuracy.toFixed(1);
 
-        // Sätt startkoordinaterna vid allra första punkten i denna loggningssession
         if (!startCoords) {
             startCoords = { lat: currentLat, lon: currentLon };
         }
 
-        // Beräkna diffen (nuvarande position minus startposition)
         const diffLat = currentLat - startCoords.lat;
         const diffLon = currentLon - startCoords.lon;
 
-        // Uppdatera gränssnittet
         diffLatEl.textContent = diffLat.toFixed(8);
         diffLonEl.textContent = diffLon.toFixed(8);
 
-        // Spara data
         const timestamp = new Date().toISOString();
         logData.push({ time: timestamp, diffLat: diffLat, diffLon: diffLon });
         countEl.textContent = logData.length;
 
-        // Uppdatera diagrammet
         jitterChart.data.datasets[0].data.push({ x: diffLon, y: diffLat });
         updatePointColors();
         jitterChart.update();
 
-        // Aktivera nedladdningsknapp om vi har data
         if (logData.length > 0) downloadBtn.disabled = false;
     }
 
@@ -201,16 +198,14 @@
         logBtn.classList.add('logging');
         downloadBtn.disabled = true;
         
-        // Återställ tidigare data
         startCoords = null;
         logData = [];
         jitterChart.data.datasets[0].data = [];
         jitterChart.update();
 
-        // Starta högprecisions-GPS-tracking
         if ("geolocation" in navigator) {
             watchId = navigator.geolocation.watchPosition(handleGPSUpdate, handleError, {
-                enableHighAccuracy: true, // Tvingar hårdvaru-GPS om tillgängligt
+                enableHighAccuracy: true,
                 timeout: 10000,
                 maximumAge: 0
             });
@@ -231,7 +226,6 @@
         }
     }
 
-    // Trigger för Start/Stopp-knapp
     logBtn.addEventListener('click', () => {
         if (!isLogging) {
             startLogging();
@@ -240,7 +234,6 @@
         }
     });
 
-    // Exportera till CSV
     downloadBtn.addEventListener('click', () => {
         if (logData.length === 0) return;
 
