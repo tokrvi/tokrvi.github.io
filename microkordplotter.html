@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPS Jitter Monitor</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-start { background-color: #2e7d32; color: white; }
+        .btn-start.logging { background-color: #c62828; }
+        .btn-download { background-color: #1565c0; color: white; }
+        button:disabled { background-color: #424242; color: #757575; cursor: not-allowed; }
+        .status-panel {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+            background: #2d2d2d;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+        }
+        .chart-container {
+            position: relative;
+            height: 450px;
+            width: 100%;
+            background: #000000;
+            border-radius: 6px;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>GPS Jitter & Diff Monitor</h2>
+    <p style="color: #aaa; font-size: 14px;">Placera enheten helt stilla. Appen mäter avvikelsen (diffen) från din startposition över tid.</p>
+    
+    <div class="controls">
+        <button id="logBtn" class="btn-start">Starta Loggning</button>
+        <button id="downloadBtn" class="btn-download" disabled>Ladda ner CSV</button>
+    </div>
+
+    <div class="status-panel">
+        <div>Aktuell Diff Lat: <span id="diffLat">0.00000000</span></div>
+        <div>Aktuell Diff Lon: <span id="diffLon">0.00000000</span></div>
+        <div>Loggade punkter: <span id="count">0</span></div>
+        <div>Noggrannhet (m): <span id="accuracy">-</span></div>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="jitterChart"></canvas>
+    </div>
+</div>
+
+<script>
+    let isLogging = false;
+    let watchId = null;
+    let startCoords = null;
+    let logData = []; // Sparar { time, diffLat, diffLon }
+
+    const logBtn = document.getElementById('logBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const diffLatEl = document.getElementById('diffLat');
+    const diffLonEl = document.getElementById('diffLon');
+    const countEl = document.getElementById('count');
+    const accuracyEl = document.getElementById('accuracy');
+
+    // Initiera Chart.js
+    const ctx = document.getElementById('jitterChart').getContext('2d');
+    const jitterChart = new Chart(ctx, {
+        type: 'scatter',
+        data: {
+            datasets: [{
+                label: 'GPS Diff-avvikelse',
+                data: [],
+                pointBackgroundColor: [], // Dynamisk färg per punkt
+                pointRadius: 6,
+                pointHoverRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    title: { display: true, text: 'Diff Longitud', color: '#aaa' },
+                    grid: { color: '#333' },
+                    ticks: { color: '#aaa' }
+                },
+                y: {
+                    title: { display: true, text: 'Diff Latitud', color: '#aaa' },
+                    grid: { color: '#333' },
+                    ticks: { color: '#aaa' }
+                }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+
+    // Funktion för att generera färg baserat på ålder (Index i listan)
+    // Blå (äldst, index 0) -> Lila/Rosa -> Röd (nyast, sista index)
+    // Använder fullt RGB-djup för maximal kontrast mot svart bakgrund
+    function updatePointColors() {
+        const totalPoints = logData.length;
+        const colors = logData.map((_, index) => {
+            if (totalPoints <= 1) return 'rgb(255, 0, 0)';
+            
+            // Beräkna ett förhållande mellan 0.0 (äldst) och 1.0 (nyast)
+            const ratio = index / (totalPoints - 1);
+            
+            // Interpolera mellan ren Blå (0, 0, 255) och ren Röd (255, 0, 0)
+            const r = Math.round(ratio * 255);
+            const g = 0; // Håller grön på 0 för skarp kontrast
+            const b = Math.round((1 - ratio) * 255);
+            
+            return `rgb(${r}, ${g}, ${b})`;
+        });
+        
+        jitterChart.data.datasets[0].pointBackgroundColor = colors;
+    }
+
+    // Hantera GPS-data som strömmar in
+    function handleGPSUpdate(position) {
+        const currentLat = position.coords.latitude;
+        const currentLon = position.coords.longitude;
+        accuracyEl.textContent = position.coords.accuracy.toFixed(1);
+
+        // Sätt startkoordinaterna vid allra första punkten i denna loggningssession
+        if (!startCoords) {
+            startCoords = { lat: currentLat, lon: currentLon };
+        }
+
+        // Beräkna diffen (nuvarande position minus startposition)
+        const diffLat = currentLat - startCoords.lat;
+        const diffLon = currentLon - startCoords.lon;
+
+        // Uppdatera gränssnittet
+        diffLatEl.textContent = diffLat.toFixed(8);
+        diffLonEl.textContent = diffLon.toFixed(8);
+
+        // Spara data
+        const timestamp = new Date().toISOString();
+        logData.push({ time: timestamp, diffLat: diffLat, diffLon: diffLon });
+        countEl.textContent = logData.length;
+
+        // Uppdatera diagrammet
+        jitterChart.data.datasets[0].data.push({ x: diffLon, y: diffLat });
+        updatePointColors();
+        jitterChart.update();
+
+        // Aktivera nedladdningsknapp om vi har data
+        if (logData.length > 0) downloadBtn.disabled = false;
+    }
+
+    function handleError(error) {
+        console.error("GPS Fel:", error);
+        alert(`Kunde inte hämta GPS-data: ${error.message}. Se till att platstjänster är aktiverade.`);
+        stopLogging();
+    }
+
+    function startLogging() {
+        isLogging = true;
+        logBtn.textContent = "Stoppa Loggning";
+        logBtn.classList.add('logging');
+        downloadBtn.disabled = true;
+        
+        // Återställ tidigare data
+        startCoords = null;
+        logData = [];
+        jitterChart.data.datasets[0].data = [];
+        jitterChart.update();
+
+        // Starta högprecisions-GPS-tracking
+        if ("geolocation" in navigator) {
+            watchId = navigator.geolocation.watchPosition(handleGPSUpdate, handleError, {
+                enableHighAccuracy: true, // Tvingar hårdvaru-GPS om tillgängligt
+                timeout: 10000,
+                maximumAge: 0
+            });
+        } else {
+            alert("Din enhet stödjer inte GPS-loggning via webbläsaren.");
+            stopLogging();
+        }
+    }
+
+    function stopLogging() {
+        isLogging = false;
+        logBtn.textContent = "Starta Loggning";
+        logBtn.classList.remove('logging');
+        
+        if (watchId !== null) {
+            navigator.geolocation.clearWatch(watchId);
+            watchId = null;
+        }
+    }
+
+    // Trigger för Start/Stopp-knapp
+    logBtn.addEventListener('click', () => {
+        if (!isLogging) {
+            startLogging();
+        } else {
+            stopLogging();
+        }
+    });
+
+    // Exportera till CSV
+    downloadBtn.addEventListener('click', () => {
+        if (logData.length === 0) return;
+
+        let csvContent = "data:text/csv;charset=utf-8,";
+        csvContent += "Timestamp,Diff_Longitud,Diff_Latitud\n";
+
+        logData.forEach(row => {
+            csvContent += `${row.time},${row.diffLon},${row.diffLat}\n`;
+        });
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `gps_jitter_data_${Date.now()}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+</script>
+
+</body>
+</html>
