@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Algoritmisk Kurvritare - Interaktiv Meny</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #111;
+            color: #eee;
+            font-family: sans-serif;
+        }
+        canvas {
+            display: block;
+        }
+        
+        /* UI-panelen startar nu som osynlig (opacity: 0) och gömd till vänster */
+        #ui {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #333;
+            max-width: 300px;
+            z-index: 10;
+            
+            /* Mjuka övergångar för att panelen ska glida/tonas snyggt */
+            transition: opacity 0.3s ease, transform 0.3s ease, visibility 0.3s;
+            opacity: 0;
+            transform: translateX(-20px);
+            visibility: hidden;
+        }
+        
+        /* När klassen .visible läggs på visas panelen */
+        #ui.visible {
+            opacity: 1;
+            transform: translateX(0);
+            visibility: visible;
+        }
+
+        /* En osynlig "aktiveringsyta" i övre vänstra hörnet (100x100 pixlar) */
+        #hotCorner {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100px;
+            height: 100px;
+            z-index: 5;
+            /* background: rgba(255,0,0,0.2);  <-- Avkommentera denna för att se ytan under test */
+        }
+        
+        .radio-group {
+            margin-bottom: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            border-radius: 6px;
+        }
+        .radio-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .radio-group label:last-child { margin-bottom: 0; }
+        
+        .main-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        button {
+            background: #333;
+            color: white;
+            border: 1px solid #555;
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+            flex-grow: 1;
+            font-weight: bold;
+        }
+        button:hover { background: #444; }
+        
+        #clearBtn {
+            width: 100%;
+            background: #552222;
+            border-color: #773333;
+            font-weight: normal;
+        }
+        #clearBtn:hover { background: #663333; }
+
+        .status-box {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 15px;
+            border: 1px solid #222;
+        }
+        .status-text { 
+            margin-bottom: 5px; 
+            font-size: 13px;
+            color: #ccc;
+        }
+        .status-text:last-child { margin-bottom: 0; }
+        .val-highlight { color: #fff; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div id="hotCorner"></div>
+
+    <div id="ui">
+        <div class="radio-group">
+            <label><input type="radio" name="controlMode" value="curves" checked> Antal kurvor (1-5)</label>
+            <label><input type="radio" name="controlMode" value="angle"> Vinkelintervall (10°-90°)</label>
+            <label><input type="radio" name="controlMode" value="size"> Linjebredd (1-10)</label>
+            <label><input type="radio" name="controlMode" value="delay"> Fördröjning i ms (bromsa)</label>
+            <label><input type="radio" name="controlMode" value="steps"> Segment per animering</label>
+        </div>
+
+        <div class="main-controls">
+            <button id="decBtn">➖ Minska</button>
+            <button id="incBtn">➕ Öka</button>
+        </div>
+
+        <button id="clearBtn">Rensa skärm</button>
+
+        <div class="status-box">
+            <div class="status-text">Kurvor: <span id="statusCurves" class="val-highlight">1</span></div>
+            <div class="status-text">Vinkel: <span id="statusAngle" class="val-highlight">±45°</span></div>
+            <div class="status-text">Linjebredd: <span id="statusSize" class="val-highlight">2</span></div>
+            <div class="status-text">Fördröjning: <span id="statusDelay" class="val-highlight">1 ms</span></div>
+            <div class="status-text">Linjelängd: <span id="statusSteps" class="val-highlight">1 segment/frame</span></div>
+        </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        const colors = ['#00ffff', '#ff00ff', '#ffff00', '#00ff00', '#ff8800'];
+        
+        const angleIntervals = [10, 15, 30, 45, 60, 75, 90];
+        let angleIndex = 3; 
+        let penSize = 2;
+        
+        const customIntervals = [1, 25, 100, 250, 1000, 2500, 10000];
+        let delayIndex = 0; 
+        let stepsIndex = 0; 
+
+        class Curve {
+            constructor(color) {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.angle = Math.random() * Math.PI * 2;
+                this.color = color;
+                this.register = [];
+                this.stepSize = 10;
+            }
+
+            updateAndDraw() {
+                const bit = Math.random() < 0.5 ? 0 : 1;
+                this.register.push(bit);
+
+                let angleChange = 0;
+                const currentInterval = angleIntervals[angleIndex];
+
+                if (this.register.length >= 2) {
+                    const len = this.register.length;
+                    const last = this.register[len - 1];
+                    const prev = this.register[len - 2];
+
+                    if (last === 0 && prev === 0) {
+                        angleChange = -currentInterval;
+                        this.register = []; 
+                    } 
+                    else if (last === 1 && prev === 1) {
+                        angleChange = currentInterval;
+                        this.register = [];
+                    } 
+                    else {
+                        angleChange = 0;
+                        if (this.register.length > 5) {
+                            this.register.shift();
+                        }
+                    }
+                }
+
+                this.angle += angleChange * (Math.PI / 180);
+
+                const nextX = this.x + Math.cos(this.angle) * this.stepSize;
+                const nextY = this.y + Math.sin(this.angle) * this.stepSize;
+
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(nextX, nextY);
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = penSize;
+                ctx.stroke();
+
+                this.x = nextX;
+                this.y = nextY;
+
+                if (this.x < 0) this.x += canvas.width;
+                if (this.x > canvas.width) this.width;
+                if (this.x > canvas.width) this.x -= canvas.width;
+                if (this.y < 0) this.y += canvas.height;
+                if (this.y > canvas.height) this.y -= canvas.height;
+            }
+        }
+
+        let curves = [];
+        curves.push(new Curve(colors[0]));
+
+        function updateUI() {
+            document.getElementById('statusCurves').innerText = curves.length;
+            document.getElementById('statusAngle').innerText = `±${angleIntervals[angleIndex]}°`;
+            document.getElementById('statusSize').innerText = penSize;
+            const delayVal = customIntervals[delayIndex];
+            document.getElementById('statusDelay').innerText = delayVal === 1 ? "1 ms (Max)" : `${delayVal} ms`;
+            document.getElementById('statusSteps').innerText = `${customIntervals[stepsIndex]}`;
+        }
+
+        // Kontrollknappar (Öka/Minska)
+        document.getElementById('incBtn').addEventListener('click', (e) => {
+            e.stopPropagation(); // Hindrar att klicket även triggar skärmklicket
+            const mode = document.querySelector('input[name="controlMode"]:checked').value;
+            if (mode === 'curves' && curves.length < 5) curves.push(new Curve(colors[curves.length]));
+            else if (mode === 'angle' && angleIndex < angleIntervals.length - 1) angleIndex++;
+            else if (mode === 'size' && penSize < 10) penSize++;
+            else if (mode === 'delay' && delayIndex < customIntervals.length - 1) delayIndex++;
+            else if (mode === 'steps' && stepsIndex < customIntervals.length - 1) stepsIndex++;
+            updateUI();
+        });
+
+        document.getElementById('decBtn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            const mode = document.querySelector('input[name="controlMode"]:checked').value;
+            if (mode === 'curves' && curves.length > 1) curves.pop();
+            else if (mode === 'angle' && angleIndex > 0) angleIndex--;
+            else if (mode === 'size' && penSize > 1) penSize--;
+            else if (mode === 'delay' && delayIndex > 0) delayIndex--;
+            else if (mode === 'steps' && stepsIndex > 0) stepsIndex--;
+            updateUI();
+        });
+
+        document.getElementById('clearBtn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            curves.forEach(c => {
+                c.x = Math.random() * canvas.width;
+                c.y = Math.random() * canvas.height;
+                c.register = [];
+            });
+        });
+
+        // Förhindra att klick inuti själva radiomenyn stänger panelen
+        document.getElementById('ui').addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
+
+        // --- LOGIK FÖR ATT VISA/DÖLJA PANELEN ---
+        const uiPanel = document.getElementById('ui');
+        const hotCorner = document.getElementById('hotCorner');
+
+        // Funktioner för att sätta synlighet
+        function showUI() { uiPanel.classList.add('visible'); }
+        function hideUI() { uiPanel.classList.remove('visible'); }
+
+        // 1. Klicka var som helst på skärmen (canvasen) för att visa/dölja
+        window.addEventListener('click', () => {
+            uiPanel.classList.toggle('visible');
+        });
+
+        // 2. Visa när musen dras till det övre vänstra "hot corner" eller in i själva UI:t
+        hotCorner.addEventListener('mouseenter', showUI);
+        uiPanel.addEventListener('mouseenter', showUI);
+
+        // 3. Göm när musen lämnar panelen
+        uiPanel.addEventListener('mouseleave', hideUI);
+
+
+        // Animationsloop
+        let lastTime = performance.now();
+        function animate(currentTime) {
+            requestAnimationFrame(animate);
+            const currentDelay = customIntervals[delayIndex];
+
+            if (currentDelay === 1 || (currentTime - lastTime >= currentDelay)) {
+                const currentSteps = customIntervals[stepsIndex];
+                for (let i = 0; i < currentSteps; i++) {
+                    curves.forEach(curve => curve.updateAndDraw());
+                }
+                lastTime = currentTime;
+            }
+        }
+
+        requestAnimationFrame(animate);
+    </script>
+</body>
+</html>
