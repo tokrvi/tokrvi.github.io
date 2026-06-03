@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>HTML Körat</title>
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; font-family: sans-serif; background: #121212; color: white; }
+        #editor-view, #run-view { display: flex; flex-direction: column; height: 100%; width: 100%; }
+        textarea { flex: 1; margin: 15px; padding: 10px; font-family: monospace; font-size: 14px; background: #1e1e1e; color: #fff; border: 1px solid #333; border-radius: 8px; resize: none; }
+        button { padding: 15px; margin: 0 15px 15px 15px; font-size: 16px; font-weight: bold; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; }
+        
+        /* Kör-skärmen */
+        #run-view { position: relative; background: white; }
+        iframe { border: none; width: 100%; flex: 1; background: white; }
+        
+        /* En tydlig flytande tillbaka-knapp som ligger ÖVER den körda koden */
+        .back-btn { position: fixed; bottom: 20px; right: 20px; padding: 12px 20px; background: rgba(0, 0, 0, 0.8); color: white; border: 1px solid #fff; border-radius: 25px; font-size: 14px; z-index: 9999; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div id="editor-view">
+        <textarea id="code" placeholder="Klistra in eller skriv din HTML-kod här..."></textarea>
+        <button onclick="runCode()">KÖR KODEN</button>
+    </div>
+
+    <div id="run-view" class="hidden">
+        <iframe id="output"></iframe>
+        <button class="back-btn" onclick="goBack()">← Ändra kod</button>
+    </div>
+
+    <script>
+        const editorView = document.getElementById('editor-view');
+        const runView = document.getElementById('run-view');
+        const codeInput = document.getElementById('code');
+        const outputIframe = document.getElementById('output');
+
+        function runCode() {
+            const html = codeInput.value;
+            
+            const dst = outputIframe.contentDocument || outputIframe.contentWindow.document;
+            dst.open();
+            dst.write(html);
+            dst.close();
+
+            editorView.classList.add('hidden');
+            runView.classList.remove('hidden');
+            
+            // Pusha till historiken för säkerhets skull
+            history.pushState({view: 'running'}, '');
+        }
+
+        function goBack() {
+            // Växla vy manuellt
+            editorView.classList.remove('hidden');
+            runView.classList.add('hidden');
+            
+            // Töm iframen så att gammal kod inte ligger kvar och spökar i bakgrunden
+            outputIframe.src = "about:blank";
+        }
+
+        // Hanterar om användaren ändå lyckas använda en hårdvaru-bakåtknapp/gest
+        window.onpopstate = function(event) {
+            goBack();
+        };
+    </script>
+</body>
+</html>
