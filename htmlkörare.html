@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HTML Körat</title>
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; font-family: sans-serif; }
+        #editor-view, #run-view { display: flex; flex-direction: column; height: 100%; width: 100%; }
+        textarea { flex: 1; margin: 10px; font-family: monospace; }
+        button { padding: 15px; margin: 10px; font-size: 16px; background: #007bff; color: white; border: none; border-radius: 5px; }
+        iframe { border: none; width: 100%; flex: 1; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div id="editor-view">
+        <textarea id="code" placeholder="Klistra in din HTML-kod här..."></textarea>
+        <button onclick="runCode()">KÖR</button>
+    </div>
+
+    <div id="run-view" class="hidden">
+        <iframe id="output"></iframe>
+    </div>
+
+    <script>
+        const editorView = document.getElementById('editor-view');
+        const runView = document.getElementById('run-view');
+        const codeInput = document.getElementById('code');
+        const outputIframe = document.getElementById('output');
+
+        function runCode() {
+            const html = codeInput.value;
+            
+            // Generera innehållet i iframen
+            const dst = outputIframe.contentDocument || outputIframe.contentWindow.document;
+            dst.open();
+            dst.write(html);
+            dst.close();
+
+            // Växla vy och lägg till ett virtuellt steg i historiken för bakåtknappen
+            editorView.classList.add('hidden');
+            runView.classList.remove('hidden');
+            history.pushState({view: 'running'}, '');
+        }
+
+        // Lyssna på webbläsarens / telefonens bakåtknapp
+        window.onpopstate = function(event) {
+            // Om användaren trycker bakåt, visa editorn igen
+            editorView.classList.remove('hidden');
+            runView.classList.add('hidden');
+        };
+    </script>
+</body>
+</html>
