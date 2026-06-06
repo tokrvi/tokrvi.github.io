@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Budget Shopping Calculator – Med multiplikation & kg-pris</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #4CAF50;
+            --primary-dark: #388E3C;
+            --secondary: #2196F3;
+            --danger: #f44336;
+            --light: #f9f9f9;
+            --dark: #333;
+            --gray: #e0e0e0;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            color: var(--dark);
+            padding: 0;
+            margin: 0;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 100%;
+            padding: 20px 15px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--gray);
+        }
+        
+        h1 {
+            color: var(--primary-dark);
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+        
+        .budget-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: var(--shadow);
+        }
+        
+        .budget-input {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 15px;
+        }
+        
+        .budget-input label {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .budget-input input {
+            padding: 15px;
+            border: 2px solid var(--gray);
+            border-radius: 8px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            text-align: center;
+        }
+        
+        .budget-display {
+            display: flex;
+            justify-content: space-between;
+            background-color: #E8F5E9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        
+        .budget-item {
+            text-align: center;
+            flex: 1;
+        }
+        
+        .budget-item h3 {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .budget-amount {
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+        
+        .remaining { color: var(--primary-dark); }
+        .spent { color: var(--secondary); }
+        .negative-budget { color: var(--danger) !important; animation: pulse 1.5s infinite; }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        .add-item-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: var(--shadow);
+        }
+        
+        .add-item-section h2 {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+        }
+        
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 15px;
+        }
+        
+        .input-group label {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .input-group input, .input-group select {
+            padding: 15px;
+            border: 2px solid var(--gray);
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+        
+        .unit-toggle {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .unit-option {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            background: #f0f0f0;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .unit-option.active {
+            background: var(--secondary);
+            color: white;
+        }
+        
+        .dynamic-fields {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .row-fields {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .row-fields .input-group {
+            flex: 1;
+        }
+        
+        .btn {
+            padding: 15px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn-primary { background-color: var(--primary); color: white; }
+        .btn-primary:hover { background-color: var(--primary-dark); }
+        .btn-secondary { background-color: var(--secondary); color: white; }
+        .btn-danger { background-color: var(--danger); color: white; }
+        
+        .quick-items {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 15px;
+        }
+        
+        .quick-item {
+            background-color: #f1f8ff;
+            border: 2px solid var(--secondary);
+            border-radius: 8px;
+            padding: 10px 5px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 600;
+        }
+        
+        .quick-item:hover {
+            background-color: var(--secondary);
+            color: white;
+        }
+        
+        .items-list-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: var(--shadow);
+        }
+        
+        .items-list-section h2 {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .items-list {
+            list-style: none;
+        }
+        
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid var(--gray);
+        }
+        
+        .item-info {
+            flex: 1;
+        }
+        
+        .item-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        
+        .item-detail {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 3px;
+        }
+        
+        .item-price {
+            color: var(--secondary);
+            font-weight: 700;
+            margin-left: 10px;
+            white-space: nowrap;
+        }
+        
+        .item-delete {
+            background: none;
+            border: none;
+            color: #aaa;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0 10px;
+        }
+        
+        .item-delete:hover { color: var(--danger); }
+        
+        .empty-list {
+            text-align: center;
+            padding: 30px 0;
+            color: #999;
+            font-style: italic;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .actions .btn { flex: 1; }
+        
+        .export-section {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+        
+        .alert {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--primary);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            display: none;
+            z-index: 1000;
+            animation: fadeIn 0.3s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @media (min-width: 768px) {
+            .container { max-width: 700px; padding: 30px 20px; }
+            .quick-items { grid-template-columns: repeat(4, 1fr); }
+        }
+        
+        @media (max-width: 480px) {
+            .quick-items { grid-template-columns: repeat(2, 1fr); }
+            .budget-display { flex-direction: column; gap: 15px; }
+            .actions { flex-direction: column; }
+            .row-fields { flex-direction: column; gap: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-shopping-cart"></i> Budget Calculator Pro</h1>
+            <p>Multiplikation & kilopris – håll koll på allt</p>
+        </header>
+        
+        <section class="budget-section">
+            <div class="budget-input">
+                <label for="budget"><i class="fas fa-wallet"></i> Din budget (kr)</label>
+                <input type="number" id="budget" placeholder="Ange belopp" min="0" step="0.01">
+            </div>
+            <div class="budget-display">
+                <div class="budget-item">
+                    <h3>Kvar att spendera</h3>
+                    <div id="remainingAmount" class="budget-amount remaining">0 kr</div>
+                </div>
+                <div class="budget-item">
+                    <h3>Totalt spenderat</h3>
+                    <div id="spentAmount" class="budget-amount spent">0 kr</div>
+                </div>
+            </div>
+        </section>
+        
+        <section class="add-item-section">
+            <h2><i class="fas fa-plus-circle"></i> Lägg till vara</h2>
+            
+            <div class="input-group">
+                <label>Varanamn</label>
+                <input type="text" id="itemName" placeholder="T.ex. Morötter">
+            </div>
+            
+            <div class="unit-toggle" id="unitToggle">
+                <div class="unit-option active" data-unit="styck">Styckpris (st)</div>
+                <div class="unit-option" data-unit="kg">Kilopris (kr/kg)</div>
+            </div>
+            
+            <div id="dynamicInputs">
+                <!-- Fylls dynamiskt av JS -->
+            </div>
+            
+            <button id="addItemBtn" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Lägg till vara
+            </button>
+            
+            <h3 style="margin-top: 25px;">Snabbval (styckpris)</h3>
+            <div class="quick-items" id="quickItems"></div>
+            <p class="subtitle" style="font-size: 0.8rem; margin-top: 8px;">Klicka på en vara för att fylla i namn & pris (justera enhet vid behov)</p>
+        </section>
+        
+        <section class="items-list-section">
+            <h2>
+                <span><i class="fas fa-list"></i> Mina varor</span>
+                <span id="itemCount">0 varor</span>
+            </h2>
+            <ul class="items-list" id="itemsList">
+                <li class="empty-list">Inga varor tillagda</li>
+            </ul>
+            <div class="actions">
+                <button id="clearAllBtn" class="btn btn-danger"><i class="fas fa-trash"></i> Rensa alla</button>
+                <button id="exportBtn" class="btn btn-secondary"><i class="fas fa-file-export"></i> CSV-export</button>
+            </div>
+        </section>
+        
+        <section class="export-section">
+            <p><i class="fas fa-save"></i> All data sparas automatiskt i din webbläsare.</p>
+        </section>
+        
+        <div id="alert" class="alert"></div>
+    </div>
+
+    <script>
+        // --- DATA STATE ---
+        let budget = 0;
+        let items = [];     // varje item: { id, name, unit, pricePerUnit, quantity, totalPrice, displayText }
+        
+        // Unit selection
+        let currentUnit = "styck"; // "styck" eller "kg"
+        
+        // DOM elements
+        const budgetInput = document.getElementById('budget');
+        const remainingSpan = document.getElementById('remainingAmount');
+        const spentSpan = document.getElementById('spentAmount');
+        const itemNameInput = document.getElementById('itemName');
+        const addBtn = document.getElementById('addItemBtn');
+        const itemsList = document.getElementById('itemsList');
+        const itemCountSpan = document.getElementById('itemCount');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const quickItemsContainer = document.getElementById('quickItems');
+        const alertDiv = document.getElementById('alert');
+        const unitToggleDiv = document.getElementById('unitToggle');
+        const dynamicInputsDiv = document.getElementById('dynamicInputs');
+        
+        // --- Helper: spara till localStorage ---
+        function saveToStorage() {
+            localStorage.setItem('shoppingBudget', budget);
+            localStorage.setItem('shoppingItems', JSON.stringify(items));
+        }
+        
+        // --- Ladda från localStorage ---
+        function loadFromStorage() {
+            const savedBudget = localStorage.getItem('shoppingBudget');
+            const savedItems = localStorage.getItem('shoppingItems');
+            if (savedBudget) budget = parseFloat(savedBudget);
+            if (savedItems) items = JSON.parse(savedItems);
+            budgetInput.value = budget || 0;
+        }
+        
+        // --- Uppdatera alla gränssnitt: totaler, lista, budgetdisplay ---
+        function updateUI() {
+            const totalSpent = items.reduce((sum, item) => sum + item.totalPrice, 0);
+            const remaining = budget - totalSpent;
+            
+            remainingSpan.textContent = `${remaining.toFixed(2)} kr`;
+            spentSpan.textContent = `${totalSpent.toFixed(2)} kr`;
+            if (remaining < 0) remainingSpan.classList.add('negative-budget');
+            else remainingSpan.classList.remove('negative-budget');
+            
+            itemCountSpan.textContent = `${items.length} ${items.length === 1 ? 'vara' : 'varor'}`;
+            
+            // Rendera listan
+            if (items.length === 0) {
+                itemsList.innerHTML = '<li class="empty-list">Inga varor tillagda ännu</li>';
+            } else {
+                itemsList.innerHTML = '';
+                items.forEach(item => {
+                    const li = document.createElement('li');
+                    li.className = 'item-row';
+                    li.innerHTML = `
+                        <div class="item-info">
+                            <div class="item-name">${escapeHtml(item.name)}</div>
+                            <div class="item-detail">${item.displayText}</div>
+                        </div>
+                        <div class="item-price">${item.totalPrice.toFixed(2)} kr</div>
+                        <button class="item-delete" data-id="${item.id}"><i class="fas fa-times"></i></button>
+                    `;
+                    const delBtn = li.querySelector('.item-delete');
+                    delBtn.addEventListener('click', () => deleteItemById(item.id));
+                    itemsList.appendChild(li);
+                });
+            }
+            if (budgetInput.value !== budget.toString()) budgetInput.value = budget;
+        }
+        
+        // Radera en artikel
+        function deleteItemById(id) {
+            const idx = items.findIndex(i => i.id === id);
+            if (idx !== -1) {
+                const removed = items[idx];
+                items.splice(idx, 1);
+                saveToStorage();
+                updateUI();
+                showAlert(`"${removed.name}" borttagen`, "info");
+            }
+        }
+        
+        function clearAllItems() {
+            if (items.length === 0) return;
+            if (confirm(`Radera alla ${items.length} varor?`)) {
+                items = [];
+                saveToStorage();
+                updateUI();
+                showAlert("Alla varor borttagna", "info");
+            }
+        }
+        
+        // --- Dynamiska fält beroende på enhet ---
+        function renderDynamicFields() {
+            if (currentUnit === "styck") {
+                dynamicInputsDiv.innerHTML = `
+                    <div class="row-fields">
+                        <div class="input-group">
+                            <label>Pris per styck (kr)</label>
+                            <input type="number" id="pricePerUnit" placeholder="24.50" step="0.01" min="0">
+                        </div>
+                        <div class="input-group">
+                            <label>Antal (st)</label>
+                            <input type="number" id="quantity" placeholder="1" step="1" min="1" value="1">
+                        </div>
+                    </div>
+                `;
+            } else { // kg
+                dynamicInputsDiv.innerHTML = `
+                    <div class="row-fields">
+                        <div class="input-group">
+                            <label>Kilopris (kr/kg)</label>
+                            <input type="number" id="pricePerUnit" placeholder="29.90" step="0.01" min="0">
+                        </div>
+                        <div class="input-group">
+                            <label>Vikt (gram)</label>
+                            <input type="number" id="weightGram" placeholder="t.ex 500" step="1" min="1" value="500">
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        // --- Beräkna totalpris från aktuella fält ---
+        function calculateTotalFromFields() {
+            if (currentUnit === "styck") {
+                const price = parseFloat(document.getElementById('pricePerUnit')?.value) || 0;
+                const qty = parseInt(document.getElementById('quantity')?.value) || 1;
+                return { total: price * qty, qtyOrWeight: qty, unitLabel: "st", pricePerUnit: price };
+            } else {
+                const pricePerKg = parseFloat(document.getElementById('pricePerUnit')?.value) || 0;
+                const grams = parseInt(document.getElementById('weightGram')?.value) || 0;
+                const kg = grams / 1000;
+                const total = pricePerKg * kg;
+                return { total: total, qtyOrWeight: grams, unitLabel: "g", pricePerUnit: pricePerKg, kgValue: kg };
+            }
+        }
+        
+        // --- Skapa visningstext för artikel ---
+        function getDisplayText(unit, pricePerUnit, quantityOrWeight, totalPrice) {
+            if (unit === "styck") {
+                return `${pricePerUnit.toFixed(2)} kr/st × ${quantityOrWeight} st = ${totalPrice.toFixed(2)} kr`;
+            } else {
+                const kgVal = (quantityOrWeight / 1000).toFixed(3);
+                return `${pricePerUnit.toFixed(2)} kr/kg × ${kgVal} kg (${quantityOrWeight} g) = ${totalPrice.toFixed(2)} kr`;
+            }
+        }
+        
+        // --- Lägg till vara baserat på aktuella fält ---
+        function addItem() {
+            const name = itemNameInput.value.trim();
+            if (!name) {
+                showAlert("Ange varunamn", "error");
+                return;
+            }
+            
+            if (currentUnit === "styck") {
+                const pricePerUnit = parseFloat(document.getElementById('pricePerUnit')?.value);
+                const quantity = parseInt(document.getElementById('quantity')?.value);
+                if (isNaN(pricePerUnit) || pricePerUnit <= 0) {
+                    showAlert("Ange giltigt pris per styck", "error");
+                    return;
+                }
+                if (isNaN(quantity) || quantity < 1) {
+                    showAlert("Antal måste vara minst 1", "error");
+                    return;
+                }
+                const total = pricePerUnit * quantity;
+                const displayText = getDisplayText("styck", pricePerUnit, quantity, total);
+                const newItem = {
+                    id: Date.now(),
+                    name: name,
+                    unit: "styck",
+                    pricePerUnit: pricePerUnit,
+                    quantity: quantity,
+                    totalPrice: total,
+                    displayText: displayText
+                };
+                items.push(newItem);
+            } 
+            else { // kg
+                const pricePerKg = parseFloat(document.getElementById('pricePerUnit')?.value);
+                const grams = parseInt(document.getElementById('weightGram')?.value);
+                if (isNaN(pricePerKg) || pricePerKg <= 0) {
+                    showAlert("Ange giltigt kilopris", "error");
+                    return;
+                }
+                if (isNaN(grams) || grams < 1) {
+                    showAlert("Ange vikt i gram (minst 1g)", "error");
+                    return;
+                }
+                const total = pricePerKg * (grams / 1000);
+                const displayText = getDisplayText("kg", pricePerKg, grams, total);
+                const newItem = {
+                    id: Date.now(),
+                    name: name,
+                    unit: "kg",
+                    pricePerUnit: pricePerKg,
+                    weightGram: grams,
+                    totalPrice: total,
+                    displayText: displayText
+                };
+                items.push(newItem);
+            }
+            
+            saveToStorage();
+            updateUI();
+            
+            // Rensa namn, men behåll eventuella andra fält ifall man vill lägga till liknande
+            itemNameInput.value = '';
+            showAlert(`"${name}" tillagd`, "success");
+            // Fokus tillbaka på namnfält
+            itemNameInput.focus();
+        }
+        
+        // --- CSV-export (inkluderar multiplikation och enheter)---
+        function exportToCSV() {
+            if (items.length === 0) {
+                showAlert("Inga varor att exportera", "error");
+                return;
+            }
+            let csvRows = [];
+            csvRows.push(["Varanamn", "Enhet", "Pris per enhet", "Kvantitet/Vikt", "Totalpris (kr)"]);
+            items.forEach(item => {
+                if (item.unit === "styck") {
+                    csvRows.push([item.name, "styck", item.pricePerUnit, `${item.quantity} st`, item.totalPrice]);
+                } else {
+                    csvRows.push([item.name, "kg (kilopris)", item.pricePerUnit, `${item.weightGram} g`, item.totalPrice]);
+                }
+            });
+            const totalSpent = items.reduce((s,i)=> s+i.totalPrice,0);
+            csvRows.push(["","","","TOTALT:", totalSpent]);
+            csvRows.push(["","","","ÅTERSTÅENDE BUDGET:", (budget - totalSpent).toFixed(2)]);
+            
+            const csvContent = csvRows.map(row => row.join(";")).join("\n");
+            const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.href = url;
+            link.setAttribute("download", "handlingslista_med_kg_st.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            showAlert("CSV exporterad", "success");
+        }
+        
+        // --- Snabbknappar (fördefinierade varor, styckpris)---
+        const quickItemsList = [
+            { name: "Morötter", price: 18.90 },
+            { name: "Potatis", price: 15.50 },
+            { name: "Ägg", price: 45.00 },
+            { name: "Kaffebröd", price: 28.00 },
+            { name: "Matbröd", price: 32.50 },
+            { name: "Wienerkorv", price: 38.75 },
+            { name: "Falukorv", price: 52.00 },
+            { name: "Mjölk", price: 16.90 },
+            { name: "Smör", price: 42.50 },
+            { name: "Ost", price: 89.90 },
+            { name: "Köttfärs", price: 65.00 },
+            { name: "Kyckling", price: 78.00 }
+        ];
+        
+        function renderQuickItems() {
+            quickItemsContainer.innerHTML = '';
+            quickItemsList.forEach(q => {
+                const btn = document.createElement('div');
+                btn.className = 'quick-item';
+                btn.innerHTML = `${q.name}<br><span style="font-size:0.8rem;">${q.price.toFixed(2)} kr/st</span>`;
+                btn.addEventListener('click', () => {
+                    itemNameInput.value = q.name;
+                    // Fyll i fältet för pris beroende på aktiv enhet
+                    if (currentUnit === "styck") {
+                        const priceField = document.getElementById('pricePerUnit');
+                        if (priceField) priceField.value = q.price;
+                        const qtyField = document.getElementById('quantity');
+                        if (qtyField) qtyField.value = 1;
+                    } else {
+                        const priceField = document.getElementById('pricePerUnit');
+                        if (priceField) priceField.value = q.price;
+                        const weightField = document.getElementById('weightGram');
+                        if (weightField) weightField.value = 500; // default 500g
+                    }
+                    showAlert(`${q.name} ifylld, kontrollera enhet/pris`, "info");
+                });
+                quickItemsContainer.appendChild(btn);
+            });
+        }
+        
+        // --- Hantera växling mellan styck/kg ---
+        function setupUnitToggle() {
+            const options = document.querySelectorAll('.unit-option');
+            options.forEach(opt => {
+                opt.addEventListener('click', () => {
+                    options.forEach(o => o.classList.remove('active'));
+                    opt.classList.add('active');
+                    currentUnit = opt.getAttribute('data-unit');
+                    renderDynamicFields();
+                });
+            });
+        }
+        
+        function showAlert(msg, type = "success") {
+            alertDiv.textContent = msg;
+            alertDiv.style.background = type === "error" ? "var(--danger)" : (type === "info" ? "#ff9800" : "var(--primary)");
+            alertDiv.style.display = "block";
+            setTimeout(() => alertDiv.style.display = "none", 3000);
+        }
+        
+        function escapeHtml(str) {
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+        
+        function updateBudget() {
+            const newBudget = parseFloat(budgetInput.value) || 0;
+            if (newBudget < 0) {
+                showAlert("Budget kan inte vara negativ", "error");
+                budgetInput.value = budget;
+                return;
+            }
+            budget = newBudget;
+            saveToStorage();
+            updateUI();
+            showAlert(`Budget satt till ${budget.toFixed(2)} kr`, "success");
+        }
+        
+        // --- Initiering ---
+        function init() {
+            loadFromStorage();
+            renderQuickItems();
+            setupUnitToggle();
+            renderDynamicFields();   // start med styckfält
+            // Event listeners
+            budgetInput.addEventListener('change', updateBudget);
+            addBtn.addEventListener('click', addItem);
+            clearAllBtn.addEventListener('click', clearAllItems);
+            exportBtn.addEventListener('click', exportToCSV);
+            itemNameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addItem(); });
+            updateUI();
+        }
+        
+        init();
+    </script>
+</body>
+</html>
