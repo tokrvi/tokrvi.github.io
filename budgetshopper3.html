@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Budget Shopping Pro – Inlärningsläge & Streckkod</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
+    <script src="https://unpkg.com/dexie@3.2.4/dist/dexie.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; }
+        body { background-color: #f5f5f5; color: #333; padding: 0; margin: 0; min-height: 100vh; }
+        .container { max-width: 100%; padding: 20px 15px; margin: 0 auto; }
+        header { text-align: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #e0e0e0; }
+        h1 { color: #388E3C; font-size: 1.8rem; margin-bottom: 10px; }
+        .budget-section, .add-item-section, .items-list-section, .export-section, .product-manager {
+            background: white; border-radius: 12px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .budget-input { display: flex; flex-direction: column; margin-bottom: 15px; }
+        .budget-input label { font-weight: 600; margin-bottom: 8px; }
+        .budget-input input { padding: 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1.2rem; font-weight: 600; text-align: center; }
+        .budget-display { display: flex; justify-content: space-between; background-color: #E8F5E9; padding: 15px; border-radius: 8px; margin-top: 10px; }
+        .budget-item { text-align: center; flex: 1; }
+        .budget-item h3 { font-size: 0.9rem; color: #666; margin-bottom: 5px; }
+        .budget-amount { font-size: 1.4rem; font-weight: 700; }
+        .remaining { color: #4CAF50; }
+        .spent { color: #2196F3; }
+        .negative-budget { color: #f44336 !important; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+        .input-group { display: flex; flex-direction: column; margin-bottom: 15px; }
+        .input-group label { font-weight: 600; margin-bottom: 8px; }
+        .input-group input, .input-group select { padding: 15px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem; }
+        .unit-toggle { display: flex; gap: 15px; margin-bottom: 15px; }
+        .unit-option { flex: 1; padding: 12px; text-align: center; background: #f0f0f0; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .unit-option.active { background: #2196F3; color: white; }
+        .dynamic-fields { display: flex; flex-direction: column; gap: 15px; }
+        .row-fields { display: flex; gap: 15px; }
+        .row-fields .input-group { flex: 1; }
+        .btn { padding: 15px; border: none; border-radius: 8px; font-size: 1rem; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-primary { background-color: #4CAF50; color: white; }
+        .btn-secondary { background-color: #2196F3; color: white; }
+        .btn-danger { background-color: #f44336; color: white; }
+        .btn-warning { background-color: #ff9800; color: white; }
+        .btn-small { padding: 8px 12px; font-size: 0.85rem; }
+        .quick-items { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 15px; }
+        .quick-item { background-color: #f1f8ff; border: 2px solid #2196F3; border-radius: 8px; padding: 10px 5px; text-align: center; cursor: pointer; transition: all 0.2s; font-weight: 600; }
+        .quick-item:hover { background-color: #2196F3; color: white; }
+        .items-list { list-style: none; }
+        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-bottom: 1px solid #e0e0e0; }
+        .item-info { flex: 1; }
+        .item-name { font-weight: 600; font-size: 1.1rem; }
+        .item-detail { font-size: 0.85rem; color: #666; margin-top: 3px; }
+        .item-price { color: #2196F3; font-weight: 700; margin-left: 10px; white-space: nowrap; }
+        .item-delete { background: none; border: none; color: #aaa; font-size: 1.2rem; cursor: pointer; padding: 0 10px; }
+        .item-delete:hover { color: #f44336; }
+        .empty-list { text-align: center; padding: 30px 0; color: #999; font-style: italic; }
+        .actions { display: flex; gap: 15px; margin-top: 20px; }
+        .actions .btn { flex: 1; }
+        .camera-preview { position: relative; margin-top: 15px; background: #000; border-radius: 12px; overflow: hidden; display: none; }
+        .camera-preview video { width: 100%; height: auto; display: block; }
+        .camera-overlay { position: absolute; bottom: 10px; left: 0; right: 0; text-align: center; background: rgba(0,0,0,0.7); color: white; padding: 5px; font-size: 0.8rem; }
+        .product-list { max-height: 300px; overflow-y: auto; margin-top: 10px; }
+        .product-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
+        .product-info { font-size: 0.9rem; }
+        .product-actions button { margin-left: 5px; background: none; border: none; cursor: pointer; font-size: 1rem; }
+        .alert { position: fixed; bottom: 20px; right: 20px; background: #4CAF50; color: white; padding: 15px 25px; border-radius: 8px; display: none; z-index: 1000; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @media (min-width: 768px) { .container { max-width: 700px; padding: 30px 20px; } .quick-items { grid-template-columns: repeat(4, 1fr); } }
+        @media (max-width: 480px) { .quick-items { grid-template-columns: repeat(2, 1fr); } .budget-display { flex-direction: column; gap: 15px; } .actions { flex-direction: column; } .row-fields { flex-direction: column; gap: 10px; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header><h1><i class="fas fa-barcode"></i> Budget Shopping Pro</h1><p>Inlärningsläge – spara produkter med streckkod</p></header>
+
+        <!-- Budget -->
+        <section class="budget-section">
+            <div class="budget-input"><label><i class="fas fa-wallet"></i> Din budget (kr)</label><input type="number" id="budget" placeholder="Ange belopp" min="0" step="0.01"></div>
+            <div class="budget-display"><div class="budget-item"><h3>Kvar att spendera</h3><div id="remainingAmount" class="budget-amount remaining">0 kr</div></div>
+            <div class="budget-item"><h3>Totalt spenderat</h3><div id="spentAmount" class="budget-amount spent">0 kr</div></div></div>
+        </section>
+
+        <!-- Lägg till vara -->
+        <section class="add-item-section">
+            <h2><i class="fas fa-plus-circle"></i> Lägg till vara</h2>
+            <div class="input-group"><label>Varanamn</label><input type="text" id="itemName" placeholder="T.ex. Morötter"></div>
+            <button id="scanBarcodeBtn" class="btn btn-warning" style="margin-bottom: 15px;"><i class="fas fa-camera"></i> Skanna streckkod (10 sek)</button>
+            <div id="cameraPreview" class="camera-preview"><video id="video" autoplay muted playsinline></video><div class="camera-overlay">Rikta kameran mot streckkoden...</div></div>
+            
+            <div class="unit-toggle" id="unitToggle"><div class="unit-option active" data-unit="styck">Styckpris (st)</div><div class="unit-option" data-unit="kg">Kilopris (kr/kg)</div></div>
+            <div id="dynamicInputs"></div>
+            <button id="addItemBtn" class="btn btn-primary"><i class="fas fa-plus"></i> Lägg till vara</button>
+            
+            <h3 style="margin-top: 25px;">Snabbval (styckpris)</h3>
+            <div class="quick-items" id="quickItems"></div>
+        </section>
+
+        <!-- Varulista -->
+        <section class="items-list-section">
+            <h2><span><i class="fas fa-list"></i> Mina varor</span><span id="itemCount">0 varor</span></h2>
+            <ul class="items-list" id="itemsList"><li class="empty-list">Inga varor tillagda</li></ul>
+            <div class="actions"><button id="clearAllBtn" class="btn btn-danger"><i class="fas fa-trash"></i> Rensa alla</button><button id="exportBtn" class="btn btn-secondary"><i class="fas fa-file-export"></i> CSV-export</button></div>
+        </section>
+
+        <!-- Produkthanterare -->
+        <section class="product-manager">
+            <h2><i class="fas fa-database"></i> Inlärda produkter <button id="manageProductsBtn" class="btn btn-small btn-secondary" style="float: right;">Visa/Redigera</button></h2>
+            <div id="productManagerPanel" style="display: none; margin-top: 15px;">
+                <div class="product-list" id="productListContainer">Laddar produkter...</div>
+                <button id="closeProductPanel" class="btn btn-small" style="margin-top: 10px; background:#ccc;">Stäng</button>
+            </div>
+            <p style="margin-top: 10px; font-size:0.8rem; color:#666;"><i class="fas fa-info-circle"></i> När du skannar en ny streckkod får du möjlighet att spara produkt. Du kan redigera pris här.</p>
+        </section>
+
+        <div id="alert" class="alert"></div>
+    </div>
+
+    <script>
+        // ------------------------------
+        // 1. IndexedDB
+        // ------------------------------
+        const db = new Dexie("ProductDatabase");
+        db.version(1).stores({ products: "barcode, name, unit, price" });
+
+        // ------------------------------
+        // 2. App-state
+        // ------------------------------
+        let budget = 0;
+        let items = [];
+        let currentUnit = "styck";
+        let cameraStream = null;
+        let scannerActive = false;
+        let scanTimeout = null;
+
+        // DOM
+        const budgetInput = document.getElementById('budget');
+        const remainingSpan = document.getElementById('remainingAmount');
+        const spentSpan = document.getElementById('spentAmount');
+        const itemNameInput = document.getElementById('itemName');
+        const addBtn = document.getElementById('addItemBtn');
+        const itemsList = document.getElementById('itemsList');
+        const itemCountSpan = document.getElementById('itemCount');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+        const exportBtn = document.getElementById('exportBtn');
+        const quickItemsContainer = document.getElementById('quickItems');
+        const alertDiv = document.getElementById('alert');
+        const unitToggleDiv = document.getElementById('unitToggle');
+        const dynamicInputsDiv = document.getElementById('dynamicInputs');
+        const scanBtn = document.getElementById('scanBarcodeBtn');
+        const cameraPreviewDiv = document.getElementById('cameraPreview');
+        const videoElement = document.getElementById('video');
+        const manageProductsBtn = document.getElementById('manageProductsBtn');
+        const productManagerPanel = document.getElementById('productManagerPanel');
+        const productListContainer = document.getElementById('productListContainer');
+        const closeProductPanel = document.getElementById('closeProductPanel');
+
+        // ------------------------------
+        // 3. Hjälpfunktioner
+        // ------------------------------
+        function saveToStorage() {
+            localStorage.setItem('shoppingBudget', budget);
+            localStorage.setItem('shoppingItems', JSON.stringify(items));
+        }
+        function loadFromStorage() {
+            const savedBudget = localStorage.getItem('shoppingBudget');
+            const savedItems = localStorage.getItem('shoppingItems');
+            if (savedBudget) budget = parseFloat(savedBudget);
+            if (savedItems) items = JSON.parse(savedItems);
+            budgetInput.value = budget || 0;
+        }
+        function showAlert(msg, type = "success") {
+            alertDiv.textContent = msg;
+            alertDiv.style.background = type === "error" ? "#f44336" : (type === "info" ? "#ff9800" : "#4CAF50");
+            alertDiv.style.display = "block";
+            setTimeout(() => alertDiv.style.display = "none", 3000);
+        }
+        function updateUI() {
+            const totalSpent = items.reduce((sum, item) => sum + item.totalPrice, 0);
+            const remaining = budget - totalSpent;
+            remainingSpan.textContent = `${remaining.toFixed(2)} kr`;
+            spentSpan.textContent = `${totalSpent.toFixed(2)} kr`;
+            if (remaining < 0) remainingSpan.classList.add('negative-budget');
+            else remainingSpan.classList.remove('negative-budget');
+            itemCountSpan.textContent = `${items.length} ${items.length === 1 ? 'vara' : 'varor'}`;
+            if (items.length === 0) itemsList.innerHTML = '<li class="empty-list">Inga varor tillagda ännu</li>';
+            else {
+                itemsList.innerHTML = '';
+                items.forEach(item => {
+                    const li = document.createElement('li');
+                    li.className = 'item-row';
+                    li.innerHTML = `<div class="item-info"><div class="item-name">${escapeHtml(item.name)}</div><div class="item-detail">${item.displayText}</div></div><div class="item-price">${item.totalPrice.toFixed(2)} kr</div><button class="item-delete" data-id="${item.id}"><i class="fas fa-times"></i></button>`;
+                    li.querySelector('.item-delete').addEventListener('click', () => deleteItemById(item.id));
+                    itemsList.appendChild(li);
+                });
+            }
+            if (budgetInput.value !== budget.toString()) budgetInput.value = budget;
+        }
+        function deleteItemById(id) {
+            const idx = items.findIndex(i => i.id === id);
+            if (idx !== -1) { items.splice(idx, 1); saveToStorage(); updateUI(); showAlert("Vara borttagen", "info"); }
+        }
+        function clearAllItems() {
+            if (items.length === 0) return;
+            if (confirm(`Radera alla ${items.length} varor?`)) { items = []; saveToStorage(); updateUI(); showAlert("Alla varor borttagna", "info"); }
+        }
+        function escapeHtml(str) { return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m]); }
+
+        // Dynamiska fält
+        function renderDynamicFields() {
+            if (currentUnit === "styck") {
+                dynamicInputsDiv.innerHTML = `<div class="row-fields"><div class="input-group"><label>Pris per styck (kr)</label><input type="number" id="pricePerUnit" step="0.01" min="0"></div><div class="input-group"><label>Antal (st)</label><input type="number" id="quantity" step="1" min="1" value="1"></div></div>`;
+            } else {
+                dynamicInputsDiv.innerHTML = `<div class="row-fields"><div class="input-group"><label>Kilopris (kr/kg)</label><input type="number" id="pricePerUnit" step="0.01" min="0"></div><div class="input-group"><label>Vikt (gram)</label><input type="number" id="weightGram" step="1" min="1" value="500"></div></div>`;
+            }
+        }
+        function getTotalFromFields() {
+            if (currentUnit === "styck") {
+                const price = parseFloat(document.getElementById('pricePerUnit')?.value) || 0;
+                const qty = parseInt(document.getElementById('quantity')?.value) || 1;
+                return { total: price * qty, qtyOrWeight: qty, unitLabel: "st", pricePerUnit: price };
+            } else {
+                const pricePerKg = parseFloat(document.getElementById('pricePerUnit')?.value) || 0;
+                const grams = parseInt(document.getElementById('weightGram')?.value) || 0;
+                const total = pricePerKg * (grams / 1000);
+                return { total: total, qtyOrWeight: grams, unitLabel: "g", pricePerUnit: pricePerKg };
+            }
+        }
+        function getDisplayText(unit, pricePerUnit, quantityOrWeight, totalPrice) {
+            if (unit === "styck") return `${pricePerUnit.toFixed(2)} kr/st × ${quantityOrWeight} st = ${totalPrice.toFixed(2)} kr`;
+            else return `${pricePerUnit.toFixed(2)} kr/kg × ${(quantityOrWeight/1000).toFixed(3)} kg (${quantityOrWeight} g) = ${totalPrice.toFixed(2)} kr`;
+        }
+        function addItemFromFields(productName = null, prefillOnly = false) {
+            let name = productName || itemNameInput.value.trim();
+            if (!name) { showAlert("Ange varunamn", "error"); return false; }
+            if (prefillOnly) return true; // används ej här
+            if (currentUnit === "styck") {
+                let pricePerUnit = parseFloat(document.getElementById('pricePerUnit')?.value);
+                let quantity = parseInt(document.getElementById('quantity')?.value) || 1;
+                if (isNaN(pricePerUnit) || pricePerUnit <= 0) { showAlert("Ange giltigt pris per styck", "error"); return false; }
+                const total = pricePerUnit * quantity;
+                const displayText = getDisplayText("styck", pricePerUnit, quantity, total);
+                items.push({ id: Date.now(), name, unit: "styck", pricePerUnit, quantity, totalPrice: total, displayText });
+            } else {
+                let pricePerKg = parseFloat(document.getElementById('pricePerUnit')?.value);
+                let grams = parseInt(document.getElementById('weightGram')?.value) || 500;
+                if (isNaN(pricePerKg) || pricePerKg <= 0) { showAlert("Ange giltigt kilopris", "error"); return false; }
+                const total = pricePerKg * (grams / 1000);
+                const displayText = getDisplayText("kg", pricePerKg, grams, total);
+                items.push({ id: Date.now(), name, unit: "kg", pricePerUnit: pricePerKg, weightGram: grams, totalPrice: total, displayText });
+            }
+            saveToStorage(); updateUI(); itemNameInput.value = ''; showAlert(`"${name}" tillagd`, "success"); itemNameInput.focus();
+            return true;
+        }
+
+        // ------------------------------
+        // 4. Streckkodshantering (Inlärningsläge + ifyllnad)
+        // ------------------------------
+        async function stopScanner() {
+            if (scannerActive) { Quagga.stop(); scannerActive = false; }
+            if (scanTimeout) clearTimeout(scanTimeout);
+            if (cameraStream) { cameraStream.getTracks().forEach(track => track.stop()); cameraStream = null; }
+            cameraPreviewDiv.style.display = 'none';
+            if (videoElement.srcObject) videoElement.srcObject = null;
+        }
+        async function startScanner() {
+            if (scannerActive) return;
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                cameraStream = stream;
+                videoElement.srcObject = stream;
+                cameraPreviewDiv.style.display = 'block';
+                await videoElement.play();
+                Quagga.init({
+                    inputStream: { type: "LiveStream", target: videoElement, constraints: { facingMode: "environment" } },
+                    decoder: { readers: ["ean_reader", "ean_8_reader", "code_128_reader", "code_39_reader"] }
+                }, (err) => {
+                    if (err) { showAlert("Kunde inte starta streckkodsläsare: " + err, "error"); stopScanner(); return; }
+                    Quagga.start();
+                    scannerActive = true;
+                    showAlert("Skannar... Rikta mot streckkoden (10 sek)", "info");
+                    scanTimeout = setTimeout(() => { if (scannerActive) { showAlert("Ingen streckkod hittades", "error"); stopScanner(); } }, 10000);
+                });
+                Quagga.onDetected(async (result) => {
+                    const code = result.codeResult.code;
+                    showAlert("Streckkod avläst: " + code, "success");
+                    stopScanner();
+                    const product = await db.products.get(code);
+                    if (product) {
+                        // Redan inlärd produkt - fyll i namn, enhet och pris, men låt användaren justera antal/vikt
+                        itemNameInput.value = product.name;
+                        // Växla till rätt enhet
+                        if (product.unit === "kg") {
+                            document.querySelector('.unit-option[data-unit="kg"]').click();
+                            setTimeout(() => {
+                                const priceField = document.getElementById('pricePerUnit');
+                                if (priceField) priceField.value = product.price;
+                                const weightField = document.getElementById('weightGram');
+                                if (weightField) weightField.value = 500; // förslag, användaren ändrar
+                            }, 100);
+                        } else {
+                            document.querySelector('.unit-option[data-unit="styck"]').click();
+                            setTimeout(() => {
+                                const priceField = document.getElementById('pricePerUnit');
+                                if (priceField) priceField.value = product.price;
+                                const qtyField = document.getElementById('quantity');
+                                if (qtyField) qtyField.value = 1; // användaren kan ändra
+                            }, 100);
+                        }
+                        showAlert(`Produkt hittad: ${product.name}. Justera pris/antal/vikt vid behov.`, "success");
+                    } else {
+                        // Ny produkt - inlärningsläge
+                        const productName = prompt("Ny produkt! Ange varunamn:", "Ny vara");
+                        if (productName && productName.trim() !== "") {
+                            const unitChoice = confirm("Välj enhet:\nOK = Kilopris (kr/kg)\nAvbryt = Styckpris (kr/st)");
+                            const unit = unitChoice ? "kg" : "styck";
+                            let price = 0;
+                            if (unit === "styck") price = parseFloat(prompt("Ange pris per styck:", "0"));
+                            else price = parseFloat(prompt("Ange kilopris (kr/kg):", "0"));
+                            if (!isNaN(price) && price > 0) {
+                                await db.products.add({ barcode: code, name: productName, unit: unit, price: price });
+                                showAlert(`Produkt ${productName} sparad i databasen`, "success");
+                                // Fyll i fälten
+                                itemNameInput.value = productName;
+                                if (unit === "kg") document.querySelector('.unit-option[data-unit="kg"]').click();
+                                else document.querySelector('.unit-option[data-unit="styck"]').click();
+                                setTimeout(() => {
+                                    const priceField = document.getElementById('pricePerUnit');
+                                    if (priceField) priceField.value = price;
+                                    if (unit === "kg") {
+                                        const weightField = document.getElementById('weightGram');
+                                        if (weightField) weightField.value = 500;
+                                    } else {
+                                        const qtyField = document.getElementById('quantity');
+                                        if (qtyField) qtyField.value = 1;
+                                    }
+                                }, 100);
+                            } else { showAlert("Ogiltigt pris, produkten sparades inte", "error"); }
+                        } else { showAlert("Ingen produkt sparades", "info"); }
+                    }
+                });
+            } catch (err) { showAlert("Kunde inte komma åt kameran: " + err.message, "error"); stopScanner(); }
+        }
+        scanBtn.addEventListener('click', () => { if (scannerActive) stopScanner(); else startScanner(); });
+
+        // ------------------------------
+        // 5. Produkthanterare (visa/redigera/radera)
+        // ------------------------------
+        async function loadProductManager() {
+            const products = await db.products.toArray();
+            if (products.length === 0) { productListContainer.innerHTML = '<p>Inga produkter inlärda ännu.</p>'; return; }
+            productListContainer.innerHTML = '';
+            for (let prod of products) {
+                const div = document.createElement('div');
+                div.className = 'product-item';
+                div.innerHTML = `
+                    <div class="product-info"><strong>${escapeHtml(prod.name)}</strong><br>Streckkod: ${prod.barcode}<br>Enhet: ${prod.unit === 'styck' ? 'Styckpris' : 'Kilopris'} | Pris: ${prod.price.toFixed(2)} kr</div>
+                    <div class="product-actions">
+                        <button class="edit-product" data-barcode="${prod.barcode}" title="Redigera pris"><i class="fas fa-edit"></i></button>
+                        <button class="delete-product" data-barcode="${prod.barcode}" title="Ta bort"><i class="fas fa-trash"></i></button>
+                    </div>
+                `;
+                productListContainer.appendChild(div);
+            }
+            // Lägg till event listeners
+            document.querySelectorAll('.edit-product').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const barcode = btn.getAttribute('data-barcode');
+                    const product = await db.products.get(barcode);
+                    if (product) {
+                        let newPrice = parseFloat(prompt(`Redigera pris för ${product.name}:`, product.price));
+                        if (!isNaN(newPrice) && newPrice > 0) {
+                            await db.products.update(barcode, { price: newPrice });
+                            showAlert(`Pris uppdaterat för ${product.name}`, "success");
+                            loadProductManager(); // refresh
+                        } else { showAlert("Ogiltigt pris", "error"); }
+                    }
+                });
+            });
+            document.querySelectorAll('.delete-product').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const barcode = btn.getAttribute('data-barcode');
+                    if (confirm("Ta bort denna produkt från databasen?")) {
+                        await db.products.delete(barcode);
+                        showAlert("Produkt borttagen", "info");
+                        loadProductManager();
+                    }
+                });
+            });
+        }
+        manageProductsBtn.addEventListener('click', async () => {
+            if (productManagerPanel.style.display === 'none') {
+                productManagerPanel.style.display = 'block';
+                await loadProductManager();
+            } else productManagerPanel.style.display = 'none';
+        });
+        closeProductPanel.addEventListener('click', () => { productManagerPanel.style.display = 'none'; });
+
+        // ------------------------------
+        // 6. Övrigt (budget, enhetsväxling, snabbval, CSV)
+        // ------------------------------
+        function updateBudget() {
+            const newBudget = parseFloat(budgetInput.value) || 0;
+            if (newBudget < 0) { showAlert("Budget kan inte vara negativ", "error"); budgetInput.value = budget; return; }
+            budget = newBudget; saveToStorage(); updateUI(); showAlert(`Budget uppdaterad till ${budget.toFixed(2)} kr`, "success");
+        }
+        function setupUnitToggle() {
+            const options = document.querySelectorAll('.unit-option');
+            options.forEach(opt => opt.addEventListener('click', () => {
+                options.forEach(o => o.classList.remove('active'));
+                opt.classList.add('active');
+                currentUnit = opt.getAttribute('data-unit');
+                renderDynamicFields();
+            }));
+        }
+        const quickItemsList = [
+            { name: "Morötter", price: 18.90 }, { name: "Potatis", price: 15.50 }, { name: "Ägg", price: 45.00 },
+            { name: "Kaffebröd", price: 28.00 }, { name: "Matbröd", price: 32.50 }, { name: "Wienerkorv", price: 38.75 },
+            { name: "Falukorv", price: 52.00 }, { name: "Mjölk", price: 16.90 }, { name: "Smör", price: 42.50 },
+            { name: "Ost", price: 89.90 }, { name: "Köttfärs", price: 65.00 }, { name: "Kyckling", price: 78.00 }
+        ];
+        function renderQuickItems() {
+            quickItemsContainer.innerHTML = '';
+            quickItemsList.forEach(q => {
+                const btn = document.createElement('div');
+                btn.className = 'quick-item';
+                btn.innerHTML = `${q.name}<br><span style="font-size:0.8rem;">${q.price.toFixed(2)} kr/st</span>`;
+                btn.addEventListener('click', () => {
+                    itemNameInput.value = q.name;
+                    if (currentUnit === "styck") {
+                        const priceField = document.getElementById('pricePerUnit');
+                        if (priceField) priceField.value = q.price;
+                        const qtyField = document.getElementById('quantity');
+                        if (qtyField) qtyField.value = 1;
+                    } else {
+                        const priceField = document.getElementById('pricePerUnit');
+                        if (priceField) priceField.value = q.price;
+                        const weightField = document.getElementById('weightGram');
+                        if (weightField) weightField.value = 500;
+                    }
+                    showAlert(`${q.name} ifylld`, "info");
+                });
+                quickItemsContainer.appendChild(btn);
+            });
+        }
+        function exportToCSV() {
+            if (items.length === 0) { showAlert("Inga varor att exportera", "error"); return; }
+            let csvRows = [["Varanamn","Enhet","Pris per enhet","Kvantitet/Vikt","Totalpris"]];
+            items.forEach(item => {
+                if (item.unit === "styck") csvRows.push([item.name, "styck", item.pricePerUnit, `${item.quantity} st`, item.totalPrice]);
+                else csvRows.push([item.name, "kg", item.pricePerUnit, `${item.weightGram} g`, item.totalPrice]);
+            });
+            const totalSpent = items.reduce((s,i)=> s+i.totalPrice,0);
+            csvRows.push(["","","","TOTALT:", totalSpent]);
+            csvRows.push(["","","","ÅTERSTÅENDE BUDGET:", (budget - totalSpent).toFixed(2)]);
+            const csvContent = csvRows.map(row => row.join(";")).join("\n");
+            const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.href = url; link.setAttribute("download", "handlingslista.csv"); document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
+            showAlert("CSV exporterad", "success");
+        }
+
+        // ------------------------------
+        // 7. Init
+        // ------------------------------
+        function init() {
+            loadFromStorage();
+            renderQuickItems();
+            setupUnitToggle();
+            renderDynamicFields();
+            budgetInput.addEventListener('change', updateBudget);
+            addBtn.addEventListener('click', () => addItemFromFields());
+            clearAllBtn.addEventListener('click', clearAllItems);
+            exportBtn.addEventListener('click', exportToCSV);
+            itemNameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addItemFromFields(); });
+            updateUI();
+        }
+        init();
+    </script>
+</body>
+</html>
