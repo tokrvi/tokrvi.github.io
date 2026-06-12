@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Motion to MIDI Percussion</title>
+    <script src="https://cdn.jsdelivr.net/npm/midi-writer-js@2.1.4/build/browser.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 { font-size: 1.5rem; text-align: center; }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        button {
+            padding: 15px 20px;
+            font-size: 1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background-color: #007aff;
+            color: white;
+            transition: background-color 0.2s;
+        }
+        button:disabled { background-color: #555; cursor: not-allowed; }
+        #stopBtn { background-color: #ff3b30; }
+        
+        .status { margin-bottom: 20px; font-size: 0.9rem; color: #aaa; }
+
+        /* Scrollbar container för visualisering */
+        .canvas-container {
+            width: 100%;
+            max-width: 600px;
+            height: 200px;
+            overflow-x: auto; /* Tillåter scroll i sidled */
+            overflow-y: hidden;
+            background-color: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 8px;
+            position: relative;
+        }
+        canvas {
+            display: block;
+            height: 100%;
+        }
+        
+        .legend {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+            font-size: 0.8rem;
+        }
+        .legend span { display: flex; align-items: center; gap: 5px; }
+        .color-box { width: 12px; height: 12px; border-radius: 3px; }
+        .x-col { background-color: #ff2a2a; }
+        .y-col { background-color: #2a2aff; }
+        .z-col { background-color: #2aff2a; }
+    </style>
+</head>
+<body>
+
+    <h1>Rörelse till MIDI</h1>
+    
+    <div class="controls">
+        <button id="startBtn">1. Starta Inspelning</button>
+        <button id="stopBtn" disabled>2. Stoppa Inspelning</button>
+        <button id="playBtn" disabled>3. Spela via Web MIDI</button>
+        <button id="downloadBtn" disabled>4. Ladda ner MIDI-fil</button>
+    </div>
+
+    <div class="status" id="statusText">Väntar på start...</div>
+
+    <div class="canvas-container" id="canvasWrapper">
+        <canvas id="visualizer"></canvas>
+    </div>
+    
+    <div class="legend">
+        <span><div class="color-box x-col"></div> X (Kanal 1)</span>
+        <span><div class="color-box y-col"></div> Y (Kanal 2)</span>
+        <span><div class="color-box z-col"></div> Z (Kanal 3)</span>
+    </div>
+
+    <script>
+        let isRecording = false;
+        let motionData = [];
+        let startTime = 0;
+        let midiAccess = null;
+
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const playBtn = document.getElementById('playBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const statusText = document.getElementById('statusText');
+        
+        const canvas = document.getElementById('visualizer');
+        const ctx = canvas.getContext('2d');
+        const canvasWrapper = document.getElementById('canvasWrapper');
+
+        // Initiera Web MIDI API (Om webbläsaren stödjer det)
+        if (navigator.requestMIDIAccess) {
+            navigator.requestMIDIAccess().then(access => {
+                midiAccess = access;
+                statusText.innerText = "Web MIDI API redo (koppla in iRig).";
+            }).catch(err => {
+                statusText.innerText = "Kunde inte få tillgång till Web MIDI.";
+            });
+        } else {
+            statusText.innerText = "Web MIDI stöds inte i denna webbläsare (Safari). Använd nedladdning istället.";
+        }
+
+        // Hantera iOS 13+ sensor permissions
+        async function requestMotionPermission() {
+            if (typeof DeviceMotionEvent.requestPermission === 'function') {
+                try {
+                    const permission = await DeviceMotionEvent.requestPermission();
+                    return permission === 'granted';
+                } catch (error) {
+                    console.error(error);
+                    return false;
+                }
+            }
+            return true; // Android eller äldre iOS
+        }
+
+        function handleMotion(event) {
+            if (!isRecording) return;
+            
+            const ax = event.accelerationIncludingGravity.x || 0;
+            const ay = event.accelerationIncludingGravity.y || 0;
+            const az = event.accelerationIncludingGravity.z || 0;
+            
+            const timestamp = Date.now() - startTime;
+            
+            motionData.push({ t: timestamp, x: ax, y: ay, z: az });
+            drawRealTime();
+        }
+
+        startBtn.addEventListener('click', async () => {
+            const hasPermission = await requestMotionPermission();
+            if (!hasPermission) {
+                alert("Tillåtelse till rörelsesensorer nekades.");
+                return;
+            }
+
+            motionData = [];
+            startTime = Date.now();
+            isRecording = true;
+            
+            window.addEventListener('devicemotion', handleMotion);
+            
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+            playBtn.disabled = true;
+            downloadBtn.disabled = true;
+            statusText.innerText = "Spelar in... stoppa i byxfickan och gå!";
+            
+            // Återställ canvas
+            canvas.width = canvasWrapper.clientWidth;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        });
+
+        stopBtn.addEventListener('click', () => {
+            isRecording = false;
+            window.removeEventListener('devicemotion', handleMotion);
+            
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            
+            if (motionData.length > 0) {
+                playBtn.disabled = midiAccess === null;
+                downloadBtn.disabled = false;
+                statusText.innerText = `Inspelning klar! ${motionData.length} datapunkter sparade.`;
+                renderFullCanvas(); // Rendera hela spåret så man kan scrolla
+            } else {
+                statusText.innerText = "Ingen data spelades in.";
+            }
+        });
+
+        // Rita i realtid (komprimerad vy)
+        function drawRealTime() {
+            if (motionData.length < 2) return;
+            const currentData = motionData[motionData.length - 1];
+            
+            // Skjut canvas åt vänster om vi når kanten (enkel realtidsvy)
+            let xPos = (currentData.t / 20) % canvas.width;
+            if (xPos < 2) ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const centerY = canvas.height / 2;
+            const scale = 5; // Skala upp rörelsen
+
+            ctx.fillStyle = '#ff2a2a'; ctx.fillRect(xPos, centerY - (currentData.x * scale), 2, 2);
+            ctx.fillStyle = '#2a2aff'; ctx.fillRect(xPos, centerY - (currentData.y * scale), 2, 2);
+            ctx.fillStyle = '#2aff2a'; ctx.fillRect(xPos, centerY - (currentData.z * scale), 2, 2);
+        }
+
+        // Rendera hela datan efter inspelning och gör canvas scrollbar
+        function renderFullCanvas() {
+            const duration = motionData[motionData.length - 1].t;
+            const pixelsPerMs = 0.05; // Bestämmer hur bred grafen blir i förhållande till tiden
+            const fullWidth = Math.max(canvasWrapper.clientWidth, duration * pixelsPerMs);
+            
+            canvas.width = fullWidth;
+            const centerY = canvas.height / 2;
+            const scale = 5;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            motionData.forEach(d => {
+                let xPos = d.t * pixelsPerMs;
+                ctx.fillStyle = '#ff2a2a'; ctx.fillRect(xPos, centerY - (d.x * scale), 2, 2);
+                ctx.fillStyle = '#2a2aff'; ctx.fillRect(xPos, centerY - (d.y * scale), 2, 2);
+                ctx.fillStyle = '#2aff2a'; ctx.fillRect(xPos, centerY - (d.z * scale), 2, 2);
+            });
+            
+            // Skrolla längst till vänster
+            canvasWrapper.scrollLeft = 0;
+        }
+
+        // Generera MIDI-fil
+        function generateMIDI() {
+            // Skapa ett spår per axel
+            const trackX = new MidiWriter.Track();
+            const trackY = new MidiWriter.Track();
+            const trackZ = new MidiWriter.Track();
+            
+            // Enkel algoritm: Trigga trumslag om rörelsen överstiger ett tröskelvärde (Peak detection)
+            const threshold = 3.0; // Justera denna känslighet vid behov
+            let lastXTime = 0, lastYTime = 0, lastZTime = 0;
+            const cooldown = 200; // Minsta ms mellan slag för att undvika maskingevärsljud
+
+            motionData.forEach(d => {
+                // Konvertera millisekunder till MIDI "ticks"
+                const tick = Math.round(d.t / 10); 
+                
+                // Kanal 1 (X)
+                if (Math.abs(d.x) > threshold && d.t - lastXTime > cooldown) {
+                    trackX.addEvent(new MidiWriter.NoteEvent({pitch: ['C2'], duration: '16', startTick: tick, channel: 1, velocity: Math.min(127, Math.abs(d.x)*10)}));
+                    lastXTime = d.t;
+                }
+                // Kanal 2 (Y)
+                if (Math.abs(d.y) > threshold && d.t - lastYTime > cooldown) {
+                    trackY.addEvent(new MidiWriter.NoteEvent({pitch: ['D2'], duration: '16', startTick: tick, channel: 2, velocity: Math.min(127, Math.abs(d.y)*10)}));
+                    lastYTime = d.t;
+                }
+                // Kanal 3 (Z)
+                if (Math.abs(d.z) > threshold && d.t - lastZTime > cooldown) {
+                    trackZ.addEvent(new MidiWriter.NoteEvent({pitch: ['E2'], duration: '16', startTick: tick, channel: 3, velocity: Math.min(127, Math.abs(d.z)*10)}));
+                    lastZTime = d.t;
+                }
+            });
+
+            return new MidiWriter.Writer([trackX, trackY, trackZ]);
+        }
+
+        // Ladda ner MIDI
+        downloadBtn.addEventListener('click', () => {
+            const writer = generateMIDI();
+            const dataUri = writer.dataUri();
+            
+            const link = document.createElement('a');
+            link.href = dataUri;
+            link.download = `Promenad_${new Date().toISOString().slice(0,10)}.mid`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            statusText.innerText = "MIDI-fil nedladdad!";
+        });
+
+        // Enkel Web MIDI Uppspelning (Om du använder Chrome / kompatibel webbläsare)
+        playBtn.addEventListener('click', () => {
+            if (!midiAccess) return;
+            const outputs = Array.from(midiAccess.outputs.values());
+            if (outputs.length === 0) {
+                alert("Hittade inga MIDI-utgångar. Har du anslutit iRig?");
+                return;
+            }
+            const output = outputs[0]; // Välj första bästa (din iRig)
+            
+            const writer = generateMIDI();
+            // Detta är en väldigt grundläggande uppspelningsloop. 
+            // För exakt timing är den genererade .mid-filen i Garageband alltid bäst.
+            alert("Varning: Web MIDI uppspelning direkt från arrayen är experimentell. Bästa resultat fås via nedladdning.");
+        });
+
+    </script>
+</body>
+</html>
