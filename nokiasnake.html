@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nokia Snake - Tilt-styrning</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            touch-action: none;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #1a2a6c);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+        }
+        
+        .game-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            width: 100%;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 5px;
+            color: #4CAF50;
+            text-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+        }
+        
+        .score-container {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        
+        #game-board {
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            width: 100%;
+            aspect-ratio: 1/1;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .tilt-indicator {
+            width: 100%;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .tilt-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #4CAF50, #FFC107);
+            transition: width 0.3s;
+        }
+        
+        .speed-info {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            font-size: 0.9rem;
+            color: #ddd;
+        }
+        
+        .instructions {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 1rem;
+            line-height: 1.5;
+            max-width: 100%;
+            margin-top: 10px;
+        }
+        
+        .instructions p {
+            margin: 5px 0;
+        }
+        
+        button {
+            background: linear-gradient(to bottom, #4CAF50, #2E7D32);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 30px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s;
+            margin-top: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        button:hover {
+            background: linear-gradient(to bottom, #43A047, #1B5E20);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        #game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            border-radius: 10px;
+        }
+        
+        #game-over h2 {
+            font-size: 2.5rem;
+            color: #FF5252;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(255, 82, 82, 0.5);
+        }
+        
+        #final-score {
+            font-size: 1.8rem;
+            margin-bottom: 30px;
+            color: #4CAF50;
+        }
+        
+        .nokia-brand {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #aaa;
+            font-size: 0.9rem;
+            font-style: italic;
+        }
+        
+        .sensor-data {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            color: #FFC107;
+        }
+        
+        @media (max-width: 500px) {
+            .game-container {
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .score-container {
+                font-size: 1rem;
+                padding: 8px 15px;
+            }
+            
+            .instructions {
+                font-size: 0.9rem;
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <h1>NOKIA SNAKE</h1>
+            <div class="score-container">
+                <div>Poäng: <span id="score">0</span></div>
+                <div>Hastighet: <span id="speed">Normal</span></div>
+            </div>
+        </div>
+        
+        <div id="game-board">
+            <div id="game-over">
+                <h2>GAME OVER</h2>
+                <div id="final-score">Poäng: 0</div>
+                <button id="restart-btn">Spela Igen</button>
+            </div>
+            <div class="sensor-data">Lutning: <span id="tilt-value">0°</span></div>
+            <div class="nokia-brand">Inspired by Nokia 3310</div>
+        </div>
+        
+        <div class="controls">
+            <div class="tilt-indicator">
+                <div class="tilt-fill" id="tilt-fill"></div>
+            </div>
+            <div class="speed-info">
+                <span>Långsamt (platt)</span>
+                <span>Snabb (luta)</span>
+            </div>
+        </div>
+        
+       
+        
+        <button id="start-btn">Starta Spelet</button>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Elementreferenser
+            const gameBoard = document.getElementById('game-board');
+            const scoreElement = document.getElementById('score');
+            const speedElement = document.getElementById('speed');
+            const tiltValueElement = document.getElementById('tilt-value');
+            const tiltFillElement = document.getElementById('tilt-fill');
+            const startBtn = document.getElementById('start-btn');
+            const gameOverScreen = document.getElementById('game-over');
+            const finalScoreElement = document.getElementById('final-score');
+            const restartBtn = document.getElementById('restart-btn');
+            
+            // Spelvariabler
+            const ctx = gameBoard.getContext('2d');
+            const gridSize = 20;
+            const boardSize = Math.min(gameBoard.clientWidth, gameBoard.clientHeight);
+            gameBoard.width = boardSize;
+            gameBoard.height = boardSize;
+            const gridCount = boardSize / gridSize;
+            
+            let snake = [];
+            let food = {};
+            let direction = 'right';
+            let nextDirection = 'right';
+            let score = 0;
+            let gameSpeed = 120; // ms (snabbare = högre siffra)
+            let gameInterval;
+            let gameRunning = false;
+            let lastTilt = { beta: 0, gamma: 0 };
+            
+            // Initiera spelet
+            function initGame() {
+                // Startposition för ormen
+                snake = [
+                    {x: 5, y: 10},
+                    {x: 4, y: 10},
+                    {x: 3, y: 10}
+                ];
+                
+                generateFood();
+                score = 0;
+                scoreElement.textContent = score;
+                direction = 'right';
+                nextDirection = 'right';
+                speedElement.textContent = "Normal";
+                gameRunning = true;
+                
+                if (gameInterval) clearInterval(gameInterval);
+                gameInterval = setInterval(gameLoop, gameSpeed);
+                
+                // Dölj game over-skärmen
+                gameOverScreen.style.display = 'none';
+            }
+            
+            // Generera mat på slumpmässig position
+            function generateFood() {
+                const maxPos = gridCount - 1;
+                let newFood;
+                let onSnake;
+                
+                do {
+                    onSnake = false;
+                    newFood = {
+                        x: Math.floor(Math.random() * maxPos),
+                        y: Math.floor(Math.random() * maxPos)
+                    };
+                    
+                    // Kontrollera att maten inte hamnar på ormen
+                    for (let segment of snake) {
+                        if (segment.x === newFood.x && segment.y === newFood.y) {
+                            onSnake = true;
+                            break;
+                        }
+                    }
+                } while (onSnake);
+                
+                food = newFood;
+            }
+            
+            // Huvudspelloop
+            function gameLoop() {
+                moveSnake();
+                if (checkCollision()) {
+                    gameOver();
+                    return;
+                }
+                checkFoodCollision();
+                drawGame();
+            }
+            
+            // Flytta ormen
+            function moveSnake() {
+                direction = nextDirection;
+                
+                // Skapa nytt huvud baserat på riktning
+                const head = {...snake[0]};
+                
+                switch(direction) {
+                    case 'up': head.y--; break;
+                    case 'down': head.y++; break;
+                    case 'left': head.x--; break;
+                    case 'right': head.x++; break;
+                }
+                
+                // Lägg till nytt huvud
+                snake.unshift(head);
+                
+                // Ta bort svans om ormen inte ätit
+                if (!head.food) {
+                    snake.pop();
+                } else {
+                    // Återställa flagga
+                    snake[0].food = false;
+                    score += 10;
+                    scoreElement.textContent = score;
+                }
+            }
+            
+            // Kolla kollisioner
+            function checkCollision() {
+                const head = snake[0];
+                
+                // Kolla kollision med väggar
+                if (head.x < 0 || head.x >= gridCount || head.y < 0 || head.y >= gridCount) {
+                    return true;
+                }
+                
+                // Kolla kollision med sig själv
+                for (let i = 1; i < snake.length; i++) {
+                    if (head.x === snake[i].x && head.y === snake[i].y) {
+                        return true;
+                    }
+                }
+                
+                return false;
+            }
+            
+            // Kolla om ormen äter mat
+            function checkFoodCollision() {
+                const head = snake[0];
+                
+                if (head.x === food.x && head.y === food.y) {
+                    // Markera att huvudet har ätit mat
+                    head.food = true;
+                    generateFood();
+                }
+            }
+            
+            // Rita spelplanen
+            function drawGame() {
+                // Rensa canvas
+                ctx.clearRect(0, 0, boardSize, boardSize);
+                
+                // Rita rutnät (bakgrund)
+                ctx.fillStyle = '#111';
+                ctx.fillRect(0, 0, boardSize, boardSize);
+                
+                // Rita rutnätlinjer
+                ctx.strokeStyle = '#222';
+                ctx.lineWidth = 0.5;
+                
+                for (let i = 0; i <= gridCount; i++) {
+                    // Vertikala linjer
+                    ctx.beginPath();
+                    ctx.moveTo(i * gridSize, 0);
+                    ctx.lineTo(i * gridSize, boardSize);
+                    ctx.stroke();
+                    
+                    // Horisontella linjer
+                    ctx.beginPath();
+                    ctx.moveTo(0, i * gridSize);
+                    ctx.lineTo(boardSize, i * gridSize);
+                    ctx.stroke();
+                }
+                
+                // Rita mat
+                ctx.fillStyle = '#4CAF50';
+                ctx.beginPath();
+                ctx.arc(
+                    food.x * gridSize + gridSize/2,
+                    food.y * gridSize + gridSize/2,
+                    gridSize/2 - 2,
+                    0,
+                    Math.PI * 2
+                );
+                ctx.fill();
+                
+                // Rita ormen
+                snake.forEach((segment, index) => {
+                    if (index === 0) {
+                        // Rita huvudet
+                        ctx.fillStyle = '#2196F3';
+                        ctx.beginPath();
+                        ctx.arc(
+                            segment.x * gridSize + gridSize/2,
+                            segment.y * gridSize + gridSize/2,
+                            gridSize/2 - 1,
+                            0,
+                            Math.PI * 2
+                        );
+                        ctx.fill();
+                        
+                        // Rita ögon
+                        ctx.fillStyle = 'white';
+                        const eyeSize = gridSize/8;
+                        
+                        // Vänster öga
+                        let eyeX = segment.x * gridSize + gridSize/4;
+                        let eyeY = segment.y * gridSize + gridSize/3;
+                        
+                        // Höger öga
+                        if (direction === 'left' || direction === 'right') {
+                            eyeX = direction === 'left' ? 
+                                segment.x * gridSize + gridSize/4 : 
+                                segment.x * gridSize + gridSize * 3/4;
+                        } else {
+                            eyeY = direction === 'up' ? 
+                                segment.y * gridSize + gridSize/3 : 
+                                segment.y * gridSize + gridSize * 2/3;
+                        }
+                        
+                        ctx.beginPath();
+                        ctx.arc(eyeX, eyeY, eyeSize, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        // Pupill
+                        ctx.fillStyle = '#333';
+                        ctx.beginPath();
+                        ctx.arc(eyeX, eyeY, eyeSize/2, 0, Math.PI * 2);
+                        ctx.fill();
+                    } else {
+                        // Rita kroppen
+                        ctx.fillStyle = `hsl(${200 - index * 2}, 100%, 50%)`;
+                        ctx.fillRect(
+                            segment.x * gridSize + 1,
+                            segment.y * gridSize + 1,
+                            gridSize - 2,
+                            gridSize - 2
+                        );
+                        
+                        // Rita kroppsmönster
+                        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+                        ctx.beginPath();
+                        ctx.arc(
+                            segment.x * gridSize + gridSize/2,
+                            segment.y * gridSize + gridSize/2,
+                            gridSize/4,
+                            0,
+                            Math.PI * 2
+                        );
+                        ctx.fill();
+                    }
+                });
+            }
+            
+            // Hantera lutning för styrning
+            function handleOrientation(event) {
+                if (!gameRunning) return;
+                
+                const beta = event.beta;  // Framåt/bakåt (-180 till 180)
+                const gamma = event.gamma; // Vänster/höger (-90 till 90)
+                
+                // Uppdatera sensorvärden på skärmen
+                const tiltMagnitude = Math.min(100, Math.sqrt(beta * beta + gamma * gamma));
+                tiltValueElement.textContent = `${Math.round(tiltMagnitude)}°`;
+                tiltFillElement.style.width = `${tiltMagnitude}%`;
+                
+                // Hastighetskontroll - sakta ner när telefonen är platt
+                if (tiltMagnitude < 30) {
+                    speedElement.textContent = "Långsam";
+                    clearInterval(gameInterval);
+                    gameInterval = setInterval(gameLoop, 200); // Långsammare
+                } else {
+                    speedElement.textContent = "Normal";
+                    clearInterval(gameInterval);
+                    gameInterval = setInterval(gameLoop, gameSpeed);
+                }
+                
+                // Styrning baserad på lutning
+                if (Math.abs(gamma) > Math.abs(beta)) {
+                    // Horisontell lutning dominerar
+                    if (gamma > 15 && direction !== 'left') {
+                        nextDirection = 'right';
+                    } else if (gamma < -15 && direction !== 'right') {
+                        nextDirection = 'left';
+                    }
+                } else {
+                    // Vertikal lutning dominerar
+                    if (beta > 15 && direction !== 'up') {
+                        nextDirection = 'down';
+                    } else if (beta < -15 && direction !== 'down') {
+                        nextDirection = 'up';
+                    }
+                }
+                
+                lastTilt = { beta, gamma };
+            }
+            
+            // Game Over-funktion
+            function gameOver() {
+                gameRunning = false;
+                clearInterval(gameInterval);
+                
+                // Visa game over-skärmen
+                finalScoreElement.textContent = `Poäng: ${score}`;
+                gameOverScreen.style.display = 'flex';
+            }
+            
+            // Event listeners
+            startBtn.addEventListener('click', () => {
+                initGame();
+                startBtn.textContent = "Starta Om";
+            });
+            
+            restartBtn.addEventListener('click', () => {
+                initGame();
+            });
+            
+            // Hantera enhetsorientering
+            if (window.DeviceOrientationEvent) {
+                window.addEventListener('deviceorientation', handleOrientation);
+            } else {
+                alert("Din enhet stöder inte nödvändiga sensorer. Spelet kräver en mobil enhet med gyroskop.");
+                startBtn.disabled = true;
+            }
+            
+            // Rita första gången
+            drawGame();
+        });
+    </script>
+</body>
+</html>
